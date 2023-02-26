@@ -9,7 +9,7 @@ func (s *CorrectState) handleLetter(l string) {
 	s.model.pushWordHolder(l)
 
 	// update textarea
-	if l == s.model.currentUntypedLetter() {
+	if l == s.model.currentLetter() {
 		// correct letter
 		s.model.nextLetter()
 	} else {
@@ -23,7 +23,7 @@ func (s *CorrectState) handleSpace() {
 	// update word holder
 	s.model.pushWordHolder(" ")
 
-	if s.model.currentUntypedLetter() == " " {
+	if s.model.currentLetter() == " " {
 		// correct letter
 		// clear word holder
 		s.model.clearWordHolder()
@@ -40,10 +40,10 @@ func (s *CorrectState) handleSpace() {
 
 func (s *CorrectState) handleBackspace() {
 	// update word holder
-	lastLetter := s.model.popWordHolder()
+	poppedLetter := s.model.popWordHolder()
 
 	// update textarea
-	if lastLetter != "" {
+	if poppedLetter != "" {
 		s.model.previousLetter()
 	}
 }
@@ -53,7 +53,7 @@ func (s *CorrectState) view() string {
 
 	// textarea
 	past := pastTextStyle.Render(s.model.pastText())
-	current := currentLetterStyle.Render(s.model.currentUntypedLetter())
+	current := currentLetterStyle.Render(s.model.currentLetter())
 	future := s.model.futureText()
 	str += greenTextAreaStyle.Render(past + current + future)
 	str += "\n"
@@ -62,5 +62,5 @@ func (s *CorrectState) view() string {
 	str += wordHolderStyle.Render(s.model.wordHolder)
 	str += "\npress esc or ctrl+c to quit\n"
 
-	return str
+	return ContainerStyle.Render(str)
 }

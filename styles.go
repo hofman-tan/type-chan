@@ -2,35 +2,36 @@ package main
 
 import "github.com/charmbracelet/lipgloss"
 
-const red = "#cc001b"
+const red = lipgloss.Color("#cc001b")
+const green = lipgloss.Color("#5ac700")
+const grey = lipgloss.Color("#595959")
+const white = lipgloss.Color("#ffffff")
 
-var greenTextAreaStyle = lipgloss.NewStyle().
+var ContainerStyle = lipgloss.NewStyle().
+	Padding(0, 2)
+
+var textAreaStyle = lipgloss.NewStyle().
 	BorderStyle(lipgloss.RoundedBorder()).
-	BorderForeground(lipgloss.Color("#5ac700")).
 	Padding(1, 2).
 	Width(50)
 
-var redTextAreaStyle = lipgloss.NewStyle().
-	BorderStyle(lipgloss.RoundedBorder()).
-	BorderForeground(lipgloss.Color(red)).
-	Padding(1, 2).
-	Width(50)
+var greenTextAreaStyle = textAreaStyle.Copy().
+	BorderForeground(green)
+
+var redTextAreaStyle = textAreaStyle.Copy().
+	BorderForeground(red)
 
 var pastTextStyle = lipgloss.NewStyle().
-	Foreground(lipgloss.Color("#333333"))
+	Foreground(grey)
 
 var currentLetterStyle = lipgloss.NewStyle().
 	Underline(true)
 
 var errorOffsetStyle = lipgloss.NewStyle().
-	Background(lipgloss.Color(red))
+	Background(red)
 
 var wordHolderStyle = lipgloss.NewStyle().
 	BorderStyle(lipgloss.RoundedBorder()).
-	BorderForeground(lipgloss.Color("#ffffff")).
+	BorderForeground(white).
 	Padding(0, 1).
 	Width(30)
-
-	// var wrongCurrentLetterStyle = lipgloss.NewStyle().
-	// 	Underline(true).
-	// 	Foreground(lipgloss.Color("#c40000"))

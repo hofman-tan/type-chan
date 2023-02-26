@@ -22,10 +22,10 @@ func (s *WrongState) handleSpace() {
 
 func (s *WrongState) handleBackspace() {
 	// update word holder
-	lastLetter := s.model.popWordHolder()
+	poppedLetter := s.model.popWordHolder()
 
 	// update textarea
-	if lastLetter != "" {
+	if poppedLetter != "" {
 		if s.model.errorOffset != 0 {
 			s.model.decrementErrorOffset()
 		} else {
@@ -43,8 +43,8 @@ func (s *WrongState) view() string {
 
 	// textarea
 	past := pastTextStyle.Render(s.model.pastText())
-	errorOffset := errorOffsetStyle.Render(s.model.originalText[s.model.currentTextIndex : s.model.currentTextIndex+s.model.errorOffset])
-	future := s.model.originalText[s.model.currentTextIndex+s.model.errorOffset:]
+	errorOffset := errorOffsetStyle.Render(s.model.text[s.model.currentTextIndex : s.model.currentTextIndex+s.model.errorOffset])
+	future := s.model.text[s.model.currentTextIndex+s.model.errorOffset:]
 	str += redTextAreaStyle.Render(past + errorOffset + future)
 	str += "\n"
 
@@ -52,5 +52,5 @@ func (s *WrongState) view() string {
 	str += wordHolderStyle.Render(s.model.wordHolder)
 	str += "\npress esc or ctrl+c to quit\n"
 
-	return str
+	return ContainerStyle.Render(str)
 }

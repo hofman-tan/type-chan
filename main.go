@@ -11,9 +11,9 @@ import (
 const maxErrorOffset int = 10
 
 type model struct {
-	originalText string
-	words        []string
-	wordHolder   string
+	text       string
+	words      []string
+	wordHolder string
 
 	currentTextIndex int // points to the currently un-typed letter
 	currentWordIndex int // points to the currently un-typed word
@@ -25,15 +25,13 @@ type model struct {
 }
 
 func initialModel() *model {
-	//originalText := "hello there how are you my friend?"
-	originalText := "During the first part of your life, you only become aware of happiness once you have lost it. Then an age comes, a second one, in which you already know, at the moment when you begin to experience true happiness, that you are, at the end of the day, going to lose it. When I met Belle, I understood that I had just entered this second age. I also understood that I hadn’t reached the third age, in which anticipation of the loss of happiness prevents you from living."
-	words := strings.Split(originalText, " ")
+	//text := "hello there how are you my friend?"
+	text := "During the first part of your life, you only become aware of happiness once you have lost it. Then an age comes, a second one, in which you already know, at the moment when you begin to experience true happiness, that you are, at the end of the day, going to lose it. When I met Belle, I understood that I had just entered this second age. I also understood that I hadn't reached the third age, in which anticipation of the loss of happiness prevents you from living."
+	words := strings.Split(text, " ")
 
 	m := &model{
-		originalText:     originalText,
-		words:            words,
-		currentTextIndex: 0,
-		wordHolder:       "",
+		text:  text,
+		words: words,
 	}
 	m.correctState = &CorrectState{model: m}
 	m.wrongState = &WrongState{model: m}
@@ -90,26 +88,26 @@ func (m *model) changeState(s State) {
 }
 
 func (m *model) remainingLettersCount() int {
-	return len(m.originalText) - m.currentTextIndex
+	return len(m.text) - m.currentTextIndex
 }
 
-func (m *model) currentUntypedLetter() string {
-	return string(m.originalText[m.currentTextIndex])
+func (m *model) currentLetter() string {
+	return string(m.text[m.currentTextIndex])
 }
 
 func (m *model) isEndOfTextReached() bool {
-	return m.currentTextIndex >= len(m.originalText)
+	return m.currentTextIndex >= len(m.text)
 }
 
 func (m *model) pastText() string {
-	return m.originalText[0:m.currentTextIndex]
+	return m.text[0:m.currentTextIndex]
 }
 
 func (m *model) futureText() string {
-	if m.currentTextIndex+1 == len(m.originalText) {
+	if m.currentTextIndex+1 == len(m.text) {
 		return ""
 	}
-	return m.originalText[m.currentTextIndex+1:]
+	return m.text[m.currentTextIndex+1:]
 }
 
 func (m *model) Init() tea.Cmd {
