@@ -8,12 +8,12 @@ const grey = lipgloss.Color("#595959")
 const white = lipgloss.Color("#ffffff")
 
 var ContainerStyle = lipgloss.NewStyle().
-	Padding(0, 2)
+	Padding(2, 2)
 
 var textAreaStyle = lipgloss.NewStyle().
 	BorderStyle(lipgloss.RoundedBorder()).
 	Padding(1, 2).
-	Width(50)
+	Width(60)
 
 var greenTextAreaStyle = textAreaStyle.Copy().
 	BorderForeground(green)
@@ -35,3 +35,9 @@ var wordHolderStyle = lipgloss.NewStyle().
 	BorderForeground(white).
 	Padding(0, 1).
 	Width(30)
+
+var progressBarBlankStyle = lipgloss.NewStyle().
+	Background(grey)
+
+var progressBarContentStyle = lipgloss.NewStyle().
+	Background(white)

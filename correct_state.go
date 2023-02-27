@@ -62,5 +62,5 @@ func (s *CorrectState) view() string {
 	str += wordHolderStyle.Render(s.model.wordHolder)
 	str += "\npress esc or ctrl+c to quit\n"
 
-	return ContainerStyle.Render(str)
+	return str
 }

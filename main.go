@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"strings"
 
@@ -9,6 +10,7 @@ import (
 )
 
 const maxErrorOffset int = 10
+const progressBarLength int = 60
 
 type model struct {
 	text       string
@@ -25,8 +27,8 @@ type model struct {
 }
 
 func initialModel() *model {
-	//text := "hello there how are you my friend?"
-	text := "During the first part of your life, you only become aware of happiness once you have lost it. Then an age comes, a second one, in which you already know, at the moment when you begin to experience true happiness, that you are, at the end of the day, going to lose it. When I met Belle, I understood that I had just entered this second age. I also understood that I hadn't reached the third age, in which anticipation of the loss of happiness prevents you from living."
+	text := "hello there how are you my friend?"
+	//text := "During the first part of your life, you only become aware of happiness once you have lost it. Then an age comes, a second one, in which you already know, at the moment when you begin to experience true happiness, that you are, at the end of the day, going to lose it. When I met Belle, I understood that I had just entered this second age. I also understood that I hadn't reached the third age, in which anticipation of the loss of happiness prevents you from living."
 	words := strings.Split(text, " ")
 
 	m := &model{
@@ -110,6 +112,11 @@ func (m *model) futureText() string {
 	return m.text[m.currentTextIndex+1:]
 }
 
+// range within 0 to 1
+func (m *model) currentProgress() float64 {
+	return float64(m.currentTextIndex) / float64(len(m.text))
+}
+
 func (m *model) Init() tea.Cmd {
 	return nil
 }
@@ -137,11 +144,22 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+func (m *model) progressBar() string {
+	times := int(math.Floor(m.currentProgress() * float64(progressBarLength)))
+	bar := progressBarContentStyle.Render(strings.Repeat(" ", times))
+	blank := progressBarBlankStyle.Render(strings.Repeat(" ", progressBarLength-times))
+	return bar + blank + "\n"
+}
+
 func (m *model) View() string {
 	if m.isEndOfTextReached() {
 		return ""
 	}
-	return m.state.view()
+
+	str := ""
+	str += m.progressBar()
+	str += m.state.view()
+	return ContainerStyle.Render(str)
 }
 
 func main() {
