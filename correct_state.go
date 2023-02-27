@@ -11,9 +11,11 @@ func (s *CorrectState) handleLetter(l string) {
 	// update textarea
 	if l == s.model.currentLetter() {
 		// correct letter
+		s.model.incrementKeysPressed(true)
 		s.model.nextLetter()
 	} else {
 		// wrong letter
+		s.model.incrementKeysPressed(false)
 		s.model.incrementErrorOffset()
 		s.model.changeState(s.model.wrongState)
 	}
@@ -25,6 +27,7 @@ func (s *CorrectState) handleSpace() {
 
 	if s.model.currentLetter() == " " {
 		// correct letter
+		s.model.incrementKeysPressed(true)
 		// clear word holder
 		s.model.clearWordHolder()
 		// update textarea
@@ -33,6 +36,7 @@ func (s *CorrectState) handleSpace() {
 
 	} else {
 		// wrong letter
+		s.model.incrementKeysPressed(false)
 		s.model.incrementErrorOffset()
 		s.model.changeState(s.model.wrongState)
 	}

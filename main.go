@@ -5,6 +5,7 @@ import (
 	"math"
 	"os"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -20,6 +21,12 @@ type model struct {
 	currentTextIndex int // points to the currently un-typed letter
 	currentWordIndex int // points to the currently un-typed word
 	errorOffset      int // the index offset starting from currentTextIndex, marks the number of wrongly-typed letters
+
+	startTime   time.Time
+	elapsedTime time.Duration
+
+	totalKeysPressed   int
+	correctKeysPressed int
 
 	correctState State
 	wrongState   State
@@ -117,6 +124,25 @@ func (m *model) currentProgress() float64 {
 	return float64(m.currentTextIndex) / float64(len(m.text))
 }
 
+func (m *model) markStartTime() time.Time {
+	time := time.Now()
+	m.startTime = time
+	return time
+}
+
+func (m *model) markElapsedTime() time.Duration {
+	duration := time.Since(m.startTime)
+	m.elapsedTime = duration
+	return duration
+}
+
+func (m *model) incrementKeysPressed(correct bool) {
+	m.totalKeysPressed++
+	if correct {
+		m.correctKeysPressed++
+	}
+}
+
 func (m *model) Init() tea.Cmd {
 	return nil
 }
@@ -124,6 +150,10 @@ func (m *model) Init() tea.Cmd {
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+
+		if m.startTime.IsZero() {
+			m.markStartTime()
+		}
 
 		if msg.Type == tea.KeyEsc || msg.Type == tea.KeyCtrlC {
 			// exit
@@ -136,7 +166,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.state.handleLetter(msg.String())
 		}
 
+		// done typing the whole text
 		if m.isEndOfTextReached() {
+			m.markElapsedTime()
 			return m, tea.Quit
 		}
 	}
@@ -163,9 +195,14 @@ func (m *model) View() string {
 }
 
 func main() {
-	p := tea.NewProgram(initialModel())
+	m := initialModel()
+	p := tea.NewProgram(m)
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Error starting the program: %v", err)
 		os.Exit(1)
 	}
+
+	fmt.Printf("start: %s, duration: %v\n", m.startTime, m.elapsedTime.Minutes())
+	fmt.Printf("total keys: %v, correct: %v\n", m.totalKeysPressed, m.correctKeysPressed)
+	fmt.Printf("gross: %.2f, acc: %.2f%%, awpm: %.2f\n", m.grossWPM(), m.accuracy()*100, m.adjustedWPM())
 }

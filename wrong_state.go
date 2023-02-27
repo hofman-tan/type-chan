@@ -5,6 +5,8 @@ type WrongState struct {
 }
 
 func (s *WrongState) handleLetter(l string) {
+	s.model.incrementKeysPressed(false)
+
 	// update word holder
 	s.model.pushWordHolder(l)
 
@@ -13,6 +15,8 @@ func (s *WrongState) handleLetter(l string) {
 }
 
 func (s *WrongState) handleSpace() {
+	s.model.incrementKeysPressed(false)
+
 	// update word holder
 	s.model.pushWordHolder(" ")
 
