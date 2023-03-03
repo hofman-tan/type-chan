@@ -1,7 +1,7 @@
 package main
 
 type State interface {
-	handleLetter(l string)
+	handleLetter(string)
 	handleSpace()
 	handleBackspace()
 	view() string

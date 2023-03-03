@@ -1,54 +1,54 @@
 package main
 
 type CorrectState struct {
-	model *model
+	typingPage *typingPage
 }
 
 func (s *CorrectState) handleLetter(l string) {
 	// update word holder
-	s.model.pushWordHolder(l)
+	s.typingPage.pushWordHolder(l)
 
 	// update textarea
-	if l == s.model.currentLetter() {
+	if l == s.typingPage.currentLetter() {
 		// correct letter
-		s.model.incrementKeysPressed(true)
-		s.model.nextLetter()
+		s.typingPage.incrementKeysPressed(true)
+		s.typingPage.nextLetter()
 	} else {
 		// wrong letter
-		s.model.incrementKeysPressed(false)
-		s.model.incrementErrorOffset()
-		s.model.changeState(s.model.wrongState)
+		s.typingPage.incrementKeysPressed(false)
+		s.typingPage.incrementErrorOffset()
+		s.typingPage.changeState(newWrongState(s.typingPage))
 	}
 }
 
 func (s *CorrectState) handleSpace() {
 	// update word holder
-	s.model.pushWordHolder(" ")
+	s.typingPage.pushWordHolder(" ")
 
-	if s.model.currentLetter() == " " {
+	if s.typingPage.currentLetter() == " " {
 		// correct letter
-		s.model.incrementKeysPressed(true)
+		s.typingPage.incrementKeysPressed(true)
 		// clear word holder
-		s.model.clearWordHolder()
+		s.typingPage.clearWordHolder()
 		// update textarea
-		s.model.nextWord()
-		s.model.nextLetter()
+		s.typingPage.nextWord()
+		s.typingPage.nextLetter()
 
 	} else {
 		// wrong letter
-		s.model.incrementKeysPressed(false)
-		s.model.incrementErrorOffset()
-		s.model.changeState(s.model.wrongState)
+		s.typingPage.incrementKeysPressed(false)
+		s.typingPage.incrementErrorOffset()
+		s.typingPage.changeState(newWrongState(s.typingPage))
 	}
 }
 
 func (s *CorrectState) handleBackspace() {
 	// update word holder
-	poppedLetter := s.model.popWordHolder()
+	poppedLetter := s.typingPage.popWordHolder()
 
 	// update textarea
 	if poppedLetter != "" {
-		s.model.previousLetter()
+		s.typingPage.previousLetter()
 	}
 }
 
@@ -56,15 +56,19 @@ func (s *CorrectState) view() string {
 	str := ""
 
 	// textarea
-	past := pastTextStyle.Render(s.model.pastText())
-	current := currentLetterStyle.Render(s.model.currentLetter())
-	future := s.model.futureText()
+	past := pastTextStyle.Render(s.typingPage.pastText())
+	current := currentLetterStyle.Render(s.typingPage.currentLetter())
+	future := s.typingPage.futureText()
 	str += greenTextAreaStyle.Render(past + current + future)
 	str += "\n"
 
 	// word holder
-	str += wordHolderStyle.Render(s.model.wordHolder)
+	str += wordHolderStyle.Render(s.typingPage.wordHolder)
 	str += "\npress esc or ctrl+c to quit\n"
 
 	return str
+}
+
+func newCorrectState(t *typingPage) *CorrectState {
+	return &CorrectState{typingPage: t}
 }
