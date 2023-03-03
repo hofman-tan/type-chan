@@ -47,12 +47,14 @@ func (r *resultPage) View() string {
 	statStr := fmt.Sprintf("Time: %v\n", r.elapsedTime)
 	statStr += fmt.Sprintf("Gross WPM: %.2f\n", r.grossWPM)
 	statStr += fmt.Sprintf("Accuracy: %.2f%%\n", r.accuracy*100)
-	statStr += fmt.Sprintf("Adjusted WPM: %.2f", r.adjustedWPM)
+	statStr += fmt.Sprintf("Adjusted WPM: %.2f\n\n", r.adjustedWPM)
+	statStr += fmt.Sprintf("Total keys pressed: %d\n", r.totalKeysPressed)
+	statStr += fmt.Sprintf("Correct keys: %d", r.correctKeysPressed)
 
 	str := textAreaStyle.Render(statStr)
 	str += "\npress space to start new game"
 	str += "\npress esc or ctrl+c to quit\n"
-	return str
+	return ContainerStyle.Render(str)
 }
 
 func newResultPage(app *app) *resultPage {

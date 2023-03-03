@@ -12,8 +12,6 @@ classDiagram
     class Page {
       <<interface>>
 
-      app
-
       Init() tea.Cmd
       Update(tea.Msg) tea.Cmd
       View() string
@@ -26,11 +24,11 @@ classDiagram
     class ResultPage{
       app
     }
+    class Quote {
+    }
 
     class State {
       <<interface>> 
-
-      typingPage
 
       handleLetter(string)
       handleSpace()
@@ -47,10 +45,12 @@ classDiagram
     App --> Page
     TypingPage --|> Page
     ResultPage --|> Page
-    TypingPage <--> ResultPage : changes between
+    TypingPage <..> ResultPage : transitions to
 
     TypingPage --> State
     CorrectState --|> State
     WrongState --|> State
-    CorrectState <--> WrongState : switches between
+    CorrectState <..> WrongState : transitions to
+
+    TypingPage ..> Quote
 ```
