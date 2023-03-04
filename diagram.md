@@ -1,6 +1,6 @@
 ```mermaid
 ---
-title: Type-chan
+title: Class diagram
 ---
 classDiagram
     direction BT

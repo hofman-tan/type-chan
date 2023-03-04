@@ -154,6 +154,9 @@ func (t *typingPage) Update(msg tea.Msg) tea.Cmd {
 			t.currentState.handleBackspace()
 		} else if msg.Type == tea.KeySpace {
 			t.currentState.handleSpace()
+		} else if msg.Type == tea.KeyTab || msg.Type == tea.KeyEnter {
+			// do nothing
+			return nil
 		} else {
 			t.currentState.handleLetter(msg.String())
 		}
