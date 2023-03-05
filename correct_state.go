@@ -52,7 +52,7 @@ func (s *CorrectState) handleBackspace() {
 	}
 }
 
-func (s *CorrectState) view() string {
+func (s *CorrectState) textareaView() string {
 	str := ""
 
 	// textarea
@@ -60,11 +60,6 @@ func (s *CorrectState) view() string {
 	current := currentLetterStyle.Render(s.typingPage.currentLetter())
 	future := s.typingPage.futureText()
 	str += greenTextAreaStyle.Render(past + current + future)
-	str += "\n"
-
-	// word holder
-	str += wordHolderStyle.Render(s.typingPage.wordHolder)
-	str += "\npress esc or ctrl+c to quit\n"
 
 	return str
 }

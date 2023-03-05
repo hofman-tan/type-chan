@@ -26,6 +26,8 @@ classDiagram
     }
     class Quote {
     }
+    class Timer {
+    }
 
     class State {
       <<interface>> 
@@ -33,7 +35,7 @@ classDiagram
       handleLetter(string)
       handleSpace()
       handleBackspace()
-      view() string
+      textareaView() string
     }
     class CorrectState {
       typingPage
@@ -53,4 +55,5 @@ classDiagram
     CorrectState <..> WrongState : transitions to
 
     TypingPage ..> Quote
+    TypingPage --> Timer
 ```

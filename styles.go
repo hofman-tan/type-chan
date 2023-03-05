@@ -37,7 +37,14 @@ var wordHolderStyle = lipgloss.NewStyle().
 	Width(30)
 
 var progressBarBlankStyle = lipgloss.NewStyle().
-	Background(grey)
+	Foreground(grey)
 
 var progressBarContentStyle = lipgloss.NewStyle().
-	Background(white)
+	Foreground(white)
+
+var sidebarStyle = lipgloss.NewStyle().
+	BorderStyle(lipgloss.RoundedBorder()).
+	BorderForeground(grey).
+	Padding(0, 1).
+	Width(17).
+	Height(2)

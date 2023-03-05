@@ -36,7 +36,7 @@ func (r *resultPage) Update(msg tea.Msg) tea.Cmd {
 		if msg.Type == tea.KeyEsc || msg.Type == tea.KeyCtrlC {
 			// exit
 			return tea.Quit
-		} else if msg.Type == tea.KeySpace {
+		} else if msg.Type == tea.KeyEnter {
 			// switch to typing page
 			r.app.changePage(newTypingPage(r.app))
 			return r.app.Init()
@@ -57,11 +57,22 @@ func (r *resultPage) View() string {
 	statStr += fmt.Sprintf("Correct keys: %d", r.correctKeysPressed)
 
 	str := textAreaStyle.Render(statStr)
-	str += "\npress space to start new game"
+	str += "\npress enter to start new game"
 	str += "\npress esc or ctrl+c to quit\n"
 	return ContainerStyle.Render(str)
 }
 
-func newResultPage(app *app) *resultPage {
-	return &resultPage{app: app}
+func newResultPage(
+	app *app,
+	totalKeysPressed int,
+	correctKeysPressed int,
+	elapsedTime time.Duration,
+) *resultPage {
+
+	return &resultPage{
+		app:                app,
+		totalKeysPressed:   totalKeysPressed,
+		correctKeysPressed: correctKeysPressed,
+		elapsedTime:        elapsedTime,
+	}
 }
