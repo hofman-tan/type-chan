@@ -47,8 +47,8 @@ func (s *WrongState) textareaView() string {
 
 	// textarea
 	past := pastTextStyle.Render(s.typingPage.pastText())
-	errorOffset := errorOffsetStyle.Render(s.typingPage.text[s.typingPage.currentTextIndex : s.typingPage.currentTextIndex+s.typingPage.errorOffset])
-	future := s.typingPage.text[s.typingPage.currentTextIndex+s.typingPage.errorOffset:]
+	errorOffset := errorOffsetStyle.Render(substr(s.typingPage.text, s.typingPage.currentTextIndex, s.typingPage.currentTextIndex+s.typingPage.errorOffset))
+	future := substr(s.typingPage.text, s.typingPage.currentTextIndex+s.typingPage.errorOffset, len(s.typingPage.text))
 	str += redTextAreaStyle.Render(past + errorOffset + future)
 
 	return str

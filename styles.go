@@ -7,13 +7,15 @@ const green = lipgloss.Color("#5ac700")
 const grey = lipgloss.Color("#595959")
 const white = lipgloss.Color("#ffffff")
 
+const textareaWidth = 60
+
 var ContainerStyle = lipgloss.NewStyle().
 	Padding(2, 2)
 
 var textAreaStyle = lipgloss.NewStyle().
 	BorderStyle(lipgloss.RoundedBorder()).
 	Padding(1, 2).
-	Width(60)
+	Width(textareaWidth)
 
 var greenTextAreaStyle = textAreaStyle.Copy().
 	BorderForeground(green)
