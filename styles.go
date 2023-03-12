@@ -14,7 +14,8 @@ var ContainerStyle = lipgloss.NewStyle().
 
 var textAreaStyle = lipgloss.NewStyle().
 	BorderStyle(lipgloss.RoundedBorder()).
-	Padding(1, 2)
+	Padding(1, 2).
+	Height(5) // min height
 
 var greenTextAreaStyle = textAreaStyle.Copy().
 	BorderForeground(green)
@@ -46,6 +47,5 @@ var progressBarContentStyle = lipgloss.NewStyle().
 var sidebarStyle = lipgloss.NewStyle().
 	BorderStyle(lipgloss.RoundedBorder()).
 	BorderForeground(grey).
-	Padding(0, 1).
-	Width(17).
-	Height(2)
+	Padding(1, 1).
+	Width(15)

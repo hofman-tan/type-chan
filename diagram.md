@@ -21,6 +21,9 @@ classDiagram
       currentState
       changeState(State)
     }
+    class TypingPageViewBuilder {
+      render()
+    }
     class ResultPage{
       app
     }
@@ -48,6 +51,7 @@ classDiagram
     TypingPage --|> Page
     ResultPage --|> Page
     TypingPage <..> ResultPage : transitions to
+    TypingPage --> TypingPageViewBuilder
 
     TypingPage --> State
     CorrectState --|> State

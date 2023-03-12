@@ -1,16 +1,12 @@
 package main
 
 import (
-	"fmt"
-	"math"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
 const maxErrorOffset int = 10
-const progressBarLength int = 80
 
 type typingPage struct {
 	app *app
@@ -29,6 +25,7 @@ type typingPage struct {
 	currentState State
 	timer        *timer
 	started      bool
+	viewBuilder  *typingPageViewBuilder
 }
 
 func (t *typingPage) Init() tea.Cmd {
@@ -161,37 +158,16 @@ func (t *typingPage) Update(msg tea.Msg) tea.Cmd {
 	return nil
 }
 
-func (t *typingPage) progressBarView() string {
-	times := int(math.Floor(t.currentProgress() * float64(progressBarLength)))
-	bar := progressBarContentStyle.Render(strings.Repeat("_", times))
-	blank := progressBarBlankStyle.Render(strings.Repeat("_", progressBarLength-times))
-	return bar + blank
-}
-
-func (t *typingPage) sidebarView() string {
-	if !t.started {
-		return sidebarStyle.Render("Start typing!")
-	} else {
-		return sidebarStyle.Render(fmt.Sprintf("Time left:\n%s", t.timer.string()))
-	}
-}
-
-func (t *typingPage) wordHolderView() string {
-	str := wordHolderStyle.Render(t.wordHolder)
-	str += "\npress esc or ctrl+c to quit\n"
-	return str
-}
-
 func (t *typingPage) View() string {
 	if t.isEndOfTextReached() {
 		return ""
 	}
 
-	str := ""
-	str += t.progressBarView() + "\n"
-	str += lipgloss.JoinHorizontal(lipgloss.Top, t.currentState.textareaView(), t.sidebarView()) + "\n"
-	str += t.wordHolderView()
-	return ContainerStyle.Render(str)
+	t.viewBuilder.addProgressBar(t.currentProgress())
+	t.viewBuilder.addTextarea(t.currentState.textareaView())
+	t.viewBuilder.addSidebar(t.started, t.timer.string())
+	t.viewBuilder.addWordHolder(t.wordHolder)
+	return t.viewBuilder.render()
 }
 
 func newTypingPage(app *app) *typingPage {
@@ -199,5 +175,6 @@ func newTypingPage(app *app) *typingPage {
 	// initially at correct state
 	typingPage.currentState = &CorrectState{typingPage: typingPage}
 	typingPage.timer = newCountUpTimer()
+	typingPage.viewBuilder = &typingPageViewBuilder{}
 	return typingPage
 }
