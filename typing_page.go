@@ -38,11 +38,11 @@ type typingPage struct {
 func (t *typingPage) Init() tea.Cmd {
 	//text := "test"
 	//text := "hello there how are you my friend?"
-	text := "During the first part of your life, you only become aware of happiness once you have lost it. Then an age comes, a second one, in which you already know, at the moment when you begin to experience true happiness, that you are, at the end of the day, going to lose it. When I met Belle, I understood that I had just entered this second age. I also understood that I hadn't reached the third age, in which anticipation of the loss of happiness prevents you from living."
+	//text := "During the first part of your life, you only become aware of happiness once you have lost it. Then an age comes, a second one, in which you already know, at the moment when you begin to experience true happiness, that you are, at the end of the day, going to lose it. When I met Belle, I understood that I had just entered this second age. I also understood that I hadn't reached the third age, in which anticipation of the loss of happiness prevents you from living."
 	//text := "‘Margareta! I’m surprised at you! We both know there’s no such thing as love!’"
 	//text := "hey»\nthere"
 
-	//text := getRandomQuote().Content
+	text := getRandomQuote()
 	words := strings.Split(text, " ")
 
 	t.text = text
@@ -106,35 +106,8 @@ func (t *typingPage) isEndOfTextReached() bool {
 	return t.currentTextIndex >= len(t.text)
 }
 
-// https://stackoverflow.com/questions/12311033/extracting-substrings-in-go
-// https://www.educative.io/answers/what-is-the-rune-type-in-golang
-func substr(input string, start int, end int) string {
-	asRunes := []rune(input)
-	if start >= end {
-		return ""
-	}
-	if start >= len(asRunes) {
-		return ""
-	}
-	if end > len(asRunes) {
-		end = len(asRunes)
-	}
-	return string(asRunes[start:end])
-}
-
-func (t *typingPage) pastText() string {
-	return substr(t.text, 0, t.currentTextIndex)
-}
-
 func (t *typingPage) currentLetter() string {
-	return substr(t.text, t.currentTextIndex, t.currentTextIndex+1)
-}
-
-func (t *typingPage) futureText() string {
-	if t.currentTextIndex+1 == len(t.text) {
-		return ""
-	}
-	return substr(t.text, t.currentTextIndex+1, len(t.text))
+	return string(t.text[t.currentTextIndex])
 }
 
 // range within 0 to 1

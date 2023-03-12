@@ -11,10 +11,9 @@ import (
 
 type Quote struct {
 	Content string `json:"content"`
-	Author  string `json:"author"`
 }
 
-func getRandomQuote() Quote {
+func getRandomQuote() string {
 	url := "https://api.quotable.io/random?minLength=150"
 
 	resp, err := http.Get(url)
@@ -38,5 +37,31 @@ func getRandomQuote() Quote {
 		panic(err)
 	}
 
-	return quote
+	text := processText(quote.Content)
+	return text
 }
+
+func processText(text string) string {
+	filtered := ""
+	for _, rune := range text {
+		// replace non-ASCII letter
+		if replacement, ok := unicodeSubstitute[rune]; ok {
+			rune = replacement
+		}
+
+		// remove non-ASCII letter
+		if IsASCII(rune) {
+			filtered += string(rune)
+		}
+	}
+	return filtered
+}
+
+var unicodeSubstitute = map[rune]rune{
+	'‘': '\'',
+	'’': '\'',
+}
+
+// Return true if c is a valid ASCII character; otherwise, return false.
+// https://github.com/scott-ainsworth/go-ascii/blob/e2eb5175fb10/ascii.go#L103
+func IsASCII(c rune) bool { return c <= 0x7F }
