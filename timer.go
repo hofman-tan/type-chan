@@ -8,6 +8,7 @@ import (
 
 type timer struct {
 	seconds int
+	countUp bool
 }
 
 type TickMsg time.Time
@@ -15,22 +16,39 @@ type TimesUpMsg time.Time
 
 func (t *timer) tick() tea.Cmd {
 	return tea.Tick(time.Second, func(time time.Time) tea.Msg {
-		if t.seconds > 0 {
-			t.seconds -= 1 // decrement one second
+		if t.countUp {
+			// increment one second
+			t.seconds++
 			return TickMsg(time)
+
 		} else {
-			return TimesUpMsg(time)
+			if t.seconds > 0 {
+				// decrement one second
+				t.seconds--
+				return TickMsg(time)
+			} else {
+				return TimesUpMsg(time)
+			}
 		}
 	})
 }
 
 func (t *timer) string() string {
-	duration := time.Duration(float64(t.seconds) * float64(time.Second))
+	duration := t.getTime()
 	return duration.String()
 }
 
-func newTimer() *timer {
+func (t *timer) getTime() time.Duration {
+	return time.Duration(float64(t.seconds) * float64(time.Second))
+}
+
+func newCountUpTimer() *timer {
+	return &timer{countUp: true}
+}
+
+func newCountDownTimer(seconds int) *timer {
 	return &timer{
-		seconds: 5 * 60, // 5 minutes
+		countUp: false,
+		seconds: seconds,
 	}
 }
