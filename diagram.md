@@ -27,9 +27,16 @@ classDiagram
     class ResultPage{
       app
     }
+    
     class Quote {
     }
+
     class Timer {
+      <<interface>>
+    }
+    class CountUpTimer {
+    }
+    class CountDownTimer {
     }
 
     class State {
@@ -60,4 +67,6 @@ classDiagram
 
     TypingPage ..> Quote
     TypingPage --> Timer
+    CountUpTimer --|> Timer
+    CountDownTimer --|> Timer
 ```

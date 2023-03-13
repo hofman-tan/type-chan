@@ -23,7 +23,7 @@ type typingPage struct {
 	correctKeysPressed int
 
 	currentState State
-	timer        *timer
+	timer        Timer
 	started      bool
 	viewBuilder  *typingPageViewBuilder
 }
@@ -140,7 +140,7 @@ func (t *typingPage) Update(msg tea.Msg) tea.Cmd {
 		// done typing the whole text
 		if t.isEndOfTextReached() {
 			// switch to result page
-			resultPage := newResultPage(t.app, t.totalKeysPressed, t.correctKeysPressed, t.timer.getTime())
+			resultPage := newResultPage(t.app, t.totalKeysPressed, t.correctKeysPressed, t.timer.getTimeElapsed())
 			t.app.changePage(resultPage)
 			return t.app.Init()
 		}
@@ -150,7 +150,7 @@ func (t *typingPage) Update(msg tea.Msg) tea.Cmd {
 
 	case TimesUpMsg:
 		// time's up!
-		resultPage := newResultPage(t.app, t.totalKeysPressed, t.correctKeysPressed, t.timer.getTime())
+		resultPage := newResultPage(t.app, t.totalKeysPressed, t.correctKeysPressed, t.timer.getTimeElapsed())
 		t.app.changePage(resultPage)
 		return t.app.Init()
 	}
