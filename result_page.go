@@ -59,7 +59,7 @@ func (r *resultPage) View() string {
 	str := textAreaStyle.Render(statStr)
 	str += "\npress enter to start new game"
 	str += "\npress esc or ctrl+c to quit\n"
-	return ContainerStyle.Render(str)
+	return str
 }
 
 func newResultPage(

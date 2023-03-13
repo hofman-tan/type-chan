@@ -17,7 +17,7 @@ func (p *app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (p *app) View() string {
-	return p.currentPage.View()
+	return ContainerStyle.Render(p.currentPage.View())
 }
 
 func (p *app) changePage(page Page) {

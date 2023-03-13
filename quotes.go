@@ -14,7 +14,7 @@ type Quote struct {
 }
 
 func getRandomQuote() string {
-	url := "https://api.quotable.io/random?minLength=150"
+	url := "https://api.quotable.io/random?minLength=100"
 
 	resp, err := http.Get(url)
 	if err != nil {
