@@ -4,5 +4,4 @@ type State interface {
 	handleLetter(string)
 	handleSpace()
 	handleBackspace()
-	textareaView() string
 }

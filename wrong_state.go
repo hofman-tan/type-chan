@@ -1,9 +1,5 @@
 package main
 
-import (
-	"github.com/muesli/reflow/wordwrap"
-)
-
 type WrongState struct {
 	typingPage *typingPage
 }
@@ -44,34 +40,6 @@ func (s *WrongState) handleBackspace() {
 	if s.typingPage.errorOffset == 0 {
 		s.typingPage.changeState(newCorrectState(s.typingPage))
 	}
-}
-
-func (s *WrongState) textareaView() string {
-	str := ""
-	test := wordwrap.String(s.typingPage.text, textareaWidth)
-
-	for index, rune := range test {
-		letter := string(rune)
-		if rune == '\n' {
-			letter = " "
-		}
-
-		if index < s.typingPage.currentTextIndex {
-			str += pastTextStyle.Render(letter)
-		} else if index == s.typingPage.currentTextIndex {
-			str += errorOffsetStyle.Render(currentLetterStyle.Render(letter))
-		} else if index > s.typingPage.currentTextIndex && index < s.typingPage.currentTextIndex+s.typingPage.errorOffset {
-			str += errorOffsetStyle.Render(letter)
-		} else {
-			str += letter
-		}
-
-		if rune == '\n' {
-			str += "\n"
-		}
-	}
-
-	return redTextAreaStyle.Render(str)
 }
 
 func newWrongState(t *typingPage) *WrongState {

@@ -30,12 +30,12 @@ type typingPage struct {
 
 func (t *typingPage) Init() tea.Cmd {
 	//text := "test"
-	//text := "hello there how are you my friend?"
+	text := "hello there how are you my friend?"
 	//text := "During the first part of your life, you only become aware of happiness once you have lost it. Then an age comes, a second one, in which you already know, at the moment when you begin to experience true happiness, that you are, at the end of the day, going to lose it. When I met Belle, I understood that I had just entered this second age. I also understood that I hadn't reached the third age, in which anticipation of the loss of happiness prevents you from living."
 	//text := "‘Margareta! I’m surprised at you! We both know there’s no such thing as love!’"
 	//text := "hey»\nthere"
 
-	text := getRandomQuote()
+	//text := getRandomQuote()
 	words := strings.Split(text, " ")
 
 	t.text = text
@@ -164,7 +164,7 @@ func (t *typingPage) View() string {
 	}
 
 	t.viewBuilder.addProgressBar(t.currentProgress())
-	t.viewBuilder.addTextarea(t.currentState.textareaView())
+	t.viewBuilder.addTextarea(t.text, t.currentTextIndex, t.currentTextIndex+t.errorOffset)
 	t.viewBuilder.addSidebar(t.started, t.timer.string())
 	t.viewBuilder.addWordHolder(t.wordHolder)
 	return t.viewBuilder.render()

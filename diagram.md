@@ -45,7 +45,6 @@ classDiagram
       handleLetter(string)
       handleSpace()
       handleBackspace()
-      textareaView() string
     }
     class CorrectState {
       typingPage

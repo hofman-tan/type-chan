@@ -6,11 +6,14 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/muesli/reflow/wordwrap"
 )
 
 type typingPageViewBuilder struct {
 	progressBarCurrentProgress float64
-	textarea                   string
+	textareaStr                string
+	textareaCurrentIndex       int
+	textareaErrorEndIndex      int
 	sidebarStr                 string
 	wordHolder                 string
 }
@@ -27,8 +30,53 @@ func (t *typingPageViewBuilder) renderProgressBar(totalProgress int) string {
 	return bar + blank
 }
 
-func (t *typingPageViewBuilder) addTextarea(ta string) {
-	t.textarea = ta
+func (t *typingPageViewBuilder) addTextarea(ta string, currentIndex int, errorEndIndex int) {
+	t.textareaStr = ta
+	t.textareaCurrentIndex = currentIndex
+	t.textareaErrorEndIndex = errorEndIndex
+}
+
+func (t *typingPageViewBuilder) renderTextarea() string {
+	str := ""
+	test := wordwrap.String(t.textareaStr, textareaWidth)
+
+	for index, rune := range test {
+		letter := string(rune)
+		if rune == '\n' {
+			letter = " "
+		}
+
+		if index < t.textareaCurrentIndex {
+			// past letters
+			str += pastTextStyle.Render(letter)
+
+		} else if index == t.textareaCurrentIndex {
+			// current letter
+			l := currentLetterStyle.Render(letter)
+			if t.textareaErrorEndIndex > t.textareaCurrentIndex {
+				l = errorOffsetStyle.Render(l)
+			}
+			str += l
+
+		} else if index > t.textareaCurrentIndex && index < t.textareaErrorEndIndex {
+			// wrong letters
+			str += errorOffsetStyle.Render(letter)
+
+		} else {
+			// future letters
+			str += letter
+		}
+
+		if rune == '\n' {
+			str += "\n"
+		}
+	}
+
+	if t.textareaErrorEndIndex > t.textareaCurrentIndex {
+		return redTextAreaStyle.Render(str)
+	} else {
+		return greenTextAreaStyle.Render(str)
+	}
 }
 
 func (t *typingPageViewBuilder) addSidebar(started bool, time string) {
@@ -48,9 +96,10 @@ func (t *typingPageViewBuilder) addWordHolder(word string) {
 }
 
 func (t *typingPageViewBuilder) render() string {
+	textarea := t.renderTextarea()
 	// sidebar follows the same height as textarea
-	sidebar := t.renderSidebar(lipgloss.Height(t.textarea) - 2)
-	textareaSidebar := lipgloss.JoinHorizontal(lipgloss.Top, t.textarea, sidebar)
+	sidebar := t.renderSidebar(lipgloss.Height(textarea) - 2)
+	textareaSidebar := lipgloss.JoinHorizontal(lipgloss.Top, textarea, sidebar)
 
 	// progress bar follows the same width as textarea + sidebar
 	progressBar := t.renderProgressBar(lipgloss.Width(textareaSidebar))
