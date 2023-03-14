@@ -8,6 +8,13 @@ import (
 
 const maxErrorOffset int = 10
 
+type Mode int
+
+const (
+	Sprint Mode = iota
+	Timed
+)
+
 type typingPage struct {
 	app *app
 
@@ -23,6 +30,9 @@ type typingPage struct {
 	correctKeysPressed int
 
 	currentState State
+	mode         Mode
+
+	quoteFetcher *QuoteFetcher
 	timer        Timer
 	started      bool
 	viewBuilder  *typingPageViewBuilder
@@ -30,12 +40,15 @@ type typingPage struct {
 
 func (t *typingPage) Init() tea.Cmd {
 	//text := "test"
-	text := "hello there how are you my friend?"
+	//text := "hello there how are you my friend?"
 	//text := "During the first part of your life, you only become aware of happiness once you have lost it. Then an age comes, a second one, in which you already know, at the moment when you begin to experience true happiness, that you are, at the end of the day, going to lose it. When I met Belle, I understood that I had just entered this second age. I also understood that I hadn't reached the third age, in which anticipation of the loss of happiness prevents you from living."
 	//text := "‘Margareta! I’m surprised at you! We both know there’s no such thing as love!’"
 	//text := "hey»\nthere"
 
-	//text := getRandomQuote()
+	t.quoteFetcher.StartFetching(true)
+	quote := <-t.quoteFetcher.quotes
+
+	text := quote.Text
 	words := strings.Split(text, " ")
 
 	t.text = text
@@ -137,9 +150,15 @@ func (t *typingPage) Update(msg tea.Msg) tea.Cmd {
 			return t.timer.tick()
 		}
 
+		if t.mode == Timed && t.remainingLettersCount() < textareaWidth {
+			quote := <-t.quoteFetcher.quotes
+			t.text += "\n" + quote.Text
+		}
+
 		// done typing the whole text
 		if t.isEndOfTextReached() {
 			// switch to result page
+			t.quoteFetcher.cancel()
 			resultPage := newResultPage(t.app, t.totalKeysPressed, t.correctKeysPressed, t.timer.getTimeElapsed())
 			t.app.changePage(resultPage)
 			return t.app.Init()
@@ -150,6 +169,7 @@ func (t *typingPage) Update(msg tea.Msg) tea.Cmd {
 
 	case TimesUpMsg:
 		// time's up!
+		t.quoteFetcher.cancel()
 		resultPage := newResultPage(t.app, t.totalKeysPressed, t.correctKeysPressed, t.timer.getTimeElapsed())
 		t.app.changePage(resultPage)
 		return t.app.Init()
@@ -174,7 +194,10 @@ func newTypingPage(app *app) *typingPage {
 	typingPage := &typingPage{app: app}
 	// initially at correct state
 	typingPage.currentState = &CorrectState{typingPage: typingPage}
+	typingPage.mode = Timed
+
 	typingPage.timer = newCountUpTimer()
+	typingPage.quoteFetcher = newQuoteFetcher()
 	typingPage.viewBuilder = &typingPageViewBuilder{}
 	return typingPage
 }

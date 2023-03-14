@@ -9,6 +9,8 @@ import (
 	"github.com/muesli/reflow/wordwrap"
 )
 
+const textareaWidth = 60
+
 type typingPageViewBuilder struct {
 	progressBarCurrentProgress float64
 	textareaStr                string

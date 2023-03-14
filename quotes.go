@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -9,11 +10,46 @@ import (
 //https://api.quotable.io/random?minLength=200
 //http://www.randompassages.com/
 
-type Quote struct {
-	Content string `json:"content"`
+type QuoteFetcher struct {
+	quotes chan Quote
+	cancel context.CancelFunc
 }
 
-func getRandomQuote() string {
+func (q *QuoteFetcher) StartFetching(endless bool) {
+	chanSize := 0
+	if endless {
+		chanSize = 5
+	}
+	q.quotes = make(chan Quote, chanSize)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	q.cancel = cancel
+
+	go func() {
+		for {
+			select {
+			case q.quotes <- q.getRandomQuote():
+				if !endless {
+					return
+				}
+			case <-ctx.Done():
+				// stop
+				return
+			}
+
+		}
+	}()
+}
+
+func newQuoteFetcher() *QuoteFetcher {
+	return &QuoteFetcher{}
+}
+
+type Quote struct {
+	Text string `json:"content"`
+}
+
+func (q *QuoteFetcher) getRandomQuote() Quote {
 	url := "https://api.quotable.io/random?minLength=100"
 
 	resp, err := http.Get(url)
@@ -37,8 +73,8 @@ func getRandomQuote() string {
 		panic(err)
 	}
 
-	text := processText(quote.Content)
-	return text
+	quote.Text = processText(quote.Text)
+	return quote
 }
 
 func processText(text string) string {
