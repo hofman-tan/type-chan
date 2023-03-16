@@ -21,6 +21,8 @@ classDiagram
       currentState
       changeState(State)
     }
+    class Text {
+    }
     class TypingPageViewBuilder {
       render()
     }
@@ -64,6 +66,7 @@ classDiagram
     WrongState --|> State
     CorrectState <..> WrongState : transitions to
 
+    TypingPage --> Text
     TypingPage ..> Quote
     TypingPage --> Timer
     CountUpTimer --|> Timer

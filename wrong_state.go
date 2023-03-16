@@ -11,7 +11,7 @@ func (s *WrongState) handleLetter(l string) {
 	s.typingPage.pushWordHolder(l)
 
 	// update textarea
-	s.typingPage.incrementErrorOffset()
+	s.typingPage.text.incrementErrorOffset()
 }
 
 func (s *WrongState) handleSpace() {
@@ -21,7 +21,7 @@ func (s *WrongState) handleSpace() {
 	s.typingPage.pushWordHolder(" ")
 
 	// update textarea
-	s.typingPage.incrementErrorOffset()
+	s.typingPage.text.incrementErrorOffset()
 }
 
 func (s *WrongState) handleBackspace() {
@@ -30,14 +30,14 @@ func (s *WrongState) handleBackspace() {
 
 	// update textarea
 	if poppedLetter != "" {
-		if s.typingPage.errorCount != 0 {
-			s.typingPage.decrementErrorOffset()
+		if s.typingPage.text.hasError() {
+			s.typingPage.text.decrementErrorOffset()
 		} else {
-			s.typingPage.previousLetter()
+			s.typingPage.text.previousLetter()
 		}
 	}
 
-	if s.typingPage.errorCount == 0 {
+	if !s.typingPage.text.hasError() {
 		s.typingPage.changeState(newCorrectState(s.typingPage))
 	}
 }
@@ -49,7 +49,7 @@ func (s *WrongState) handleEnter() {
 	s.typingPage.pushWordHolder("⏎")
 
 	// update textarea
-	s.typingPage.incrementErrorOffset()
+	s.typingPage.text.incrementErrorOffset()
 }
 
 func newWrongState(t *typingPage) *WrongState {

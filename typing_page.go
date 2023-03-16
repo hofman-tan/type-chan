@@ -21,27 +21,19 @@ const (
 type typingPage struct {
 	app *app
 
-	textLines  []string
-	textLength int
-	words      []string
-	wordHolder string
+	timer        Timer
+	text         *text
+	quoteFetcher *QuoteFetcher
+	viewBuilder  *typingPageViewBuilder
 
-	currentTextIndex   int // index position of current un-typed letter, counted from the very beginning of the whole text
-	currentLineIndex   int // index position of current line of text
-	currentLetterIndex int // index position of letter, counted from the start of current line
-	currentWordIndex   int // index position of current word from the word slices
-	errorCount         int // number of wrongly-typed letters, counted from the current letter index
+	wordHolder string
+	started    bool
 
 	totalKeysPressed   int
 	correctKeysPressed int
 
 	currentState State
 	mode         Mode
-
-	quoteFetcher *QuoteFetcher
-	timer        Timer
-	started      bool
-	viewBuilder  *typingPageViewBuilder
 }
 
 func (t *typingPage) Init() tea.Cmd {
@@ -64,24 +56,16 @@ func (t *typingPage) Init() tea.Cmd {
 		quotes = append(quotes, getRandomQuote())
 	}
 
-	// TODO: create a separate struct for text, which will initialize given a slice of quotes
 	for _, quote := range quotes {
-		if len(t.textLines) != 0 {
-			t.textLines[len(t.textLines)-1] += "\n"
-			t.textLength++
-		}
-
-		t.textLines = append(t.textLines, quote.lines...)
-		t.textLength += quote.length
-
-		t.words = append(t.words, quote.words...)
+		t.text.append(quote)
 	}
 
 	return nil
 }
 
 func (t *typingPage) pushWordHolder(l string) {
-	if t.errorCount < t.remainingLettersCount() && t.errorCount < maxErrorOffset {
+	if t.text.errorCount < t.text.remainingLettersCount() &&
+		t.text.errorCount < maxErrorOffset {
 		t.wordHolder += l
 	}
 }
@@ -102,65 +86,8 @@ func (t *typingPage) clearWordHolder() {
 	t.wordHolder = ""
 }
 
-func (t *typingPage) currentLine() string {
-	return t.textLines[t.currentLineIndex]
-}
-
-func (t *typingPage) nextLetter() {
-	t.currentTextIndex++
-
-	t.currentLetterIndex++
-	if t.currentLetterIndex >= len(t.currentLine()) {
-		t.currentLineIndex++
-		t.currentLetterIndex = 0
-	}
-}
-
-func (t *typingPage) previousLetter() {
-	t.currentTextIndex--
-
-	t.currentLetterIndex--
-	if t.currentLetterIndex < 0 {
-		t.currentLineIndex--
-		t.currentLetterIndex = len(t.currentLine()) - 1
-	}
-}
-
-func (t *typingPage) nextWord() {
-	t.currentWordIndex++
-}
-
-func (t *typingPage) incrementErrorOffset() {
-	if t.errorCount < t.remainingLettersCount() && t.errorCount < maxErrorOffset {
-		t.errorCount++
-	}
-}
-
-func (t *typingPage) decrementErrorOffset() {
-	if t.errorCount != 0 {
-		t.errorCount--
-	}
-}
-
 func (t *typingPage) changeState(s State) {
 	t.currentState = s
-}
-
-func (t *typingPage) remainingLettersCount() int {
-	return t.textLength - t.currentTextIndex
-}
-
-func (t *typingPage) isEndOfTextReached() bool {
-	return t.remainingLettersCount() <= 0
-}
-
-func (t *typingPage) currentLetter() string {
-	return string(t.textLines[t.currentLineIndex][t.currentLetterIndex])
-}
-
-// range within 0 to 1
-func (t *typingPage) currentProgress() float64 {
-	return float64(t.currentTextIndex) / float64(t.textLength)
 }
 
 func (t *typingPage) incrementKeysPressed(correct bool) {
@@ -194,17 +121,12 @@ func (t *typingPage) Update(msg tea.Msg) tea.Cmd {
 			return t.timer.tick()
 		}
 
-		if t.mode == Timed && t.remainingLettersCount() < 10 {
-			t.textLines[len(t.textLines)-1] += "\n"
-			t.textLength++
-
-			quote := <-t.quoteFetcher.quotes
-			t.textLines = append(t.textLines, quote.lines...)
-			t.textLength += quote.length
+		if t.mode == Timed && t.text.remainingLettersCount() < 10 {
+			t.text.append(<-t.quoteFetcher.quotes)
 		}
 
 		// done typing the whole text
-		if t.isEndOfTextReached() {
+		if t.text.isEndOfTextReached() {
 			// switch to result page
 			t.quoteFetcher.Stop()
 			resultPage := newResultPage(t.app, t.totalKeysPressed, t.correctKeysPressed, t.timer.getTimeElapsed())
@@ -227,7 +149,7 @@ func (t *typingPage) Update(msg tea.Msg) tea.Cmd {
 }
 
 func (t *typingPage) View() string {
-	if t.isEndOfTextReached() {
+	if t.text.isEndOfTextReached() {
 		return ""
 	}
 
@@ -236,15 +158,15 @@ func (t *typingPage) View() string {
 		t.viewBuilder.addProgressBar(timeProgress)
 
 		// make current line the first line in textarea
-		lineCount := int(math.Min(textareaHeight, float64(len(t.textLines)-t.currentLineIndex)))
-		lines := t.textLines[t.currentLineIndex : t.currentLineIndex+lineCount]
-		t.viewBuilder.addTextarea(lines, 0, t.currentLetterIndex, t.errorCount)
+		lineCount := int(math.Min(textareaHeight, float64(len(t.text.textLines)-t.text.currentLineIndex)))
+		lines := t.text.textLines[t.text.currentLineIndex : t.text.currentLineIndex+lineCount]
+		t.viewBuilder.addTextarea(lines, 0, t.text.currentLetterIndex, t.text.errorCount)
 
 	} else {
 
 		// render full text, with progress bar
-		t.viewBuilder.addProgressBar(t.currentProgress())
-		t.viewBuilder.addTextarea(t.textLines, t.currentLineIndex, t.currentLetterIndex, t.errorCount)
+		t.viewBuilder.addProgressBar(t.text.currentProgress())
+		t.viewBuilder.addTextarea(t.text.textLines, t.text.currentLineIndex, t.text.currentLetterIndex, t.text.errorCount)
 	}
 
 	t.viewBuilder.addSidebar(t.started, t.timer.string())
@@ -258,9 +180,7 @@ func newTypingPage(app *app) *typingPage {
 	typingPage.currentState = &CorrectState{typingPage: typingPage}
 	typingPage.mode = Timed //Sprint
 
-	typingPage.textLines = []string{}
-	typingPage.textLength = 0
-	typingPage.words = []string{}
+	typingPage.text = newText()
 
 	if typingPage.mode == Timed {
 		typingPage.timer = newCountDownTimer(countdown)
