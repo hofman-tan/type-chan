@@ -30,16 +30,26 @@ func (s *WrongState) handleBackspace() {
 
 	// update textarea
 	if poppedLetter != "" {
-		if s.typingPage.errorOffset != 0 {
+		if s.typingPage.errorCount != 0 {
 			s.typingPage.decrementErrorOffset()
 		} else {
 			s.typingPage.previousLetter()
 		}
 	}
 
-	if s.typingPage.errorOffset == 0 {
+	if s.typingPage.errorCount == 0 {
 		s.typingPage.changeState(newCorrectState(s.typingPage))
 	}
+}
+
+func (s *WrongState) handleEnter() {
+	s.typingPage.incrementKeysPressed(false)
+
+	// update word holder
+	s.typingPage.pushWordHolder("⏎")
+
+	// update textarea
+	s.typingPage.incrementErrorOffset()
 }
 
 func newWrongState(t *typingPage) *WrongState {

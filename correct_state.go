@@ -52,6 +52,26 @@ func (s *CorrectState) handleBackspace() {
 	}
 }
 
+func (s *CorrectState) handleEnter() { // update word holder
+	s.typingPage.pushWordHolder("⏎")
+
+	if s.typingPage.currentLetter() == "\n" {
+		// correct letter
+		s.typingPage.incrementKeysPressed(true)
+		// clear word holder
+		s.typingPage.clearWordHolder()
+		// update textarea
+		s.typingPage.nextWord()
+		s.typingPage.nextLetter()
+
+	} else {
+		// wrong letter
+		s.typingPage.incrementKeysPressed(false)
+		s.typingPage.incrementErrorOffset()
+		s.typingPage.changeState(newWrongState(s.typingPage))
+	}
+}
+
 func newCorrectState(t *typingPage) *CorrectState {
 	return &CorrectState{typingPage: t}
 }

@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strings"
+
+	"github.com/muesli/reflow/wordwrap"
 )
 
 //https://api.quotable.io/random?minLength=200
@@ -15,12 +18,8 @@ type QuoteFetcher struct {
 	cancel context.CancelFunc
 }
 
-func (q *QuoteFetcher) StartFetching(endless bool) {
-	chanSize := 0
-	if endless {
-		chanSize = 5
-	}
-	q.quotes = make(chan Quote, chanSize)
+func (q *QuoteFetcher) Start(buffer int) {
+	q.quotes = make(chan Quote, buffer)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	q.cancel = cancel
@@ -28,12 +27,10 @@ func (q *QuoteFetcher) StartFetching(endless bool) {
 	go func() {
 		for {
 			select {
-			case q.quotes <- q.getRandomQuote():
-				if !endless {
-					return
-				}
+			case q.quotes <- getRandomQuote():
 			case <-ctx.Done():
 				// stop
+				close(q.quotes)
 				return
 			}
 
@@ -41,15 +38,24 @@ func (q *QuoteFetcher) StartFetching(endless bool) {
 	}()
 }
 
+func (q *QuoteFetcher) Stop() {
+	if q.cancel != nil {
+		q.cancel()
+	}
+}
+
 func newQuoteFetcher() *QuoteFetcher {
 	return &QuoteFetcher{}
 }
 
 type Quote struct {
-	Text string `json:"content"`
+	Text   string `json:"content"`
+	lines  []string
+	words  []string
+	length int
 }
 
-func (q *QuoteFetcher) getRandomQuote() Quote {
+func getRandomQuote() Quote {
 	url := "https://api.quotable.io/random?minLength=100"
 
 	resp, err := http.Get(url)
@@ -74,6 +80,10 @@ func (q *QuoteFetcher) getRandomQuote() Quote {
 	}
 
 	quote.Text = processText(quote.Text)
+	quote.lines = splitTextIntoLines(quote.Text)
+	quote.words = strings.Split(quote.Text, " ")
+	quote.length = len(quote.Text)
+
 	return quote
 }
 
@@ -85,8 +95,8 @@ func processText(text string) string {
 			rune = replacement
 		}
 
-		// remove non-ASCII letter
-		if IsASCII(rune) {
+		// remove non-ASCII letter and newline character
+		if IsASCII(rune) && rune != '\n' {
 			filtered += string(rune)
 		}
 	}
@@ -98,6 +108,15 @@ var unicodeSubstitute = map[rune]rune{
 	'’': '\'',
 }
 
-// Return true if c is a valid ASCII character; otherwise, return false.
 // https://github.com/scott-ainsworth/go-ascii/blob/e2eb5175fb10/ascii.go#L103
 func IsASCII(c rune) bool { return c <= 0x7F }
+
+func splitTextIntoLines(text string) []string {
+	if len(text) == 0 {
+		return []string{}
+	}
+	wrapped := wordwrap.String(text, textareaWidth)
+	wrapped = strings.ReplaceAll(wrapped, "\n", " \n")
+	textSlices := strings.Split(wrapped, "\n")
+	return textSlices
+}
