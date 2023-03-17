@@ -6,19 +6,33 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/muesli/reflow/wordwrap"
 )
 
+const textareaWidth = 60
+const textareaMinHeight = 5
+const textareaMaxHeight = 10
+const textCountThreshold = textareaWidth * textareaMaxHeight
+
 type typingPageViewBuilder struct {
+	withProgressBar            bool
 	progressBarCurrentProgress float64
-	textareaStr                string
-	textareaCurrentIndex       int
-	textareaErrorEndIndex      int
-	sidebarStr                 string
-	wordHolder                 string
+
+	withTextarea               bool
+	textareaLines              []string
+	textareaCurrentLetterIndex int
+	textareaCurrentLineIndex   int
+	textareaErrorCount         int
+	textareaScroll             bool
+
+	withSidebar bool
+	sidebarStr  string
+
+	withWordHolder bool
+	wordHolder     string
 }
 
 func (t *typingPageViewBuilder) addProgressBar(currentProgress float64) {
+	t.withProgressBar = true
 	t.progressBarCurrentProgress = currentProgress
 }
 
@@ -30,49 +44,89 @@ func (t *typingPageViewBuilder) renderProgressBar(totalProgress int) string {
 	return bar + blank
 }
 
-func (t *typingPageViewBuilder) addTextarea(ta string, currentIndex int, errorEndIndex int) {
-	t.textareaStr = ta
-	t.textareaCurrentIndex = currentIndex
-	t.textareaErrorEndIndex = errorEndIndex
+func (t *typingPageViewBuilder) addTextarea(lines []string, currentLineIndex int, currentLetterIndex int, errorCount int) {
+	t.withTextarea = true
+	t.textareaLines = lines
+	t.textareaCurrentLineIndex = currentLineIndex
+	t.textareaCurrentLetterIndex = currentLetterIndex
+	t.textareaErrorCount = errorCount
+}
+
+func (t *typingPageViewBuilder) setTextareaScroll(scroll bool) {
+	t.textareaScroll = scroll
 }
 
 func (t *typingPageViewBuilder) renderTextarea() string {
 	str := ""
-	test := wordwrap.String(t.textareaStr, textareaWidth)
+	errorsToRender := 0
+	linesRendered := 0
 
-	for index, rune := range test {
-		letter := string(rune)
-		if rune == '\n' {
-			letter = " "
-		}
-
-		if index < t.textareaCurrentIndex {
-			// past letters
-			str += pastTextStyle.Render(letter)
-
-		} else if index == t.textareaCurrentIndex {
-			// current letter
-			l := currentLetterStyle.Render(letter)
-			if t.textareaErrorEndIndex > t.textareaCurrentIndex {
-				l = errorOffsetStyle.Render(l)
-			}
-			str += l
-
-		} else if index > t.textareaCurrentIndex && index < t.textareaErrorEndIndex {
-			// wrong letters
-			str += errorOffsetStyle.Render(letter)
-
-		} else {
-			// future letters
-			str += letter
-		}
-
-		if rune == '\n' {
-			str += "\n"
-		}
+	lineIndex := 0
+	if t.textareaScroll {
+		// make current line the first line in textarea
+		lineIndex = t.textareaCurrentLineIndex
 	}
 
-	if t.textareaErrorEndIndex > t.textareaCurrentIndex {
+	for lineIndex < len(t.textareaLines) {
+		if t.textareaScroll && linesRendered >= textareaMaxHeight {
+			break
+		}
+
+		line := t.textareaLines[lineIndex]
+		for letterIndex, rune := range line {
+			letter := string(rune)
+			if rune == '\n' {
+				letter = "⏎"
+			}
+
+			if lineIndex < t.textareaCurrentLineIndex ||
+				(lineIndex == t.textareaCurrentLineIndex && letterIndex < t.textareaCurrentLetterIndex) {
+				// past letters
+				letter = pastTextStyle.Render(letter)
+			}
+
+			if lineIndex == t.textareaCurrentLineIndex && letterIndex == t.textareaCurrentLetterIndex {
+				// current letter
+				letter = currentLetterStyle.Render(letter)
+				errorsToRender = t.textareaErrorCount
+			}
+
+			if errorsToRender > 0 {
+				// wrong letters
+				letter = errorOffsetStyle.Render(letter)
+				errorsToRender--
+			}
+
+			// no styling applied for future letters.
+
+			str += letter
+
+			// add more space between quotes
+			if rune == '\n' {
+				str += "\n"
+			}
+		}
+
+		str += "\n"
+		lineIndex++
+		linesRendered++
+	}
+
+	textBox := lipgloss.NewStyle().
+		Width(textareaWidth).
+		MaxWidth(textareaWidth)
+
+	if t.textareaScroll {
+		// fixed height
+		textBox = textBox.Height(textareaMaxHeight).MaxHeight(textareaMaxHeight)
+	} else {
+		// variable height
+		textBox = textBox.Height(textareaMinHeight)
+	}
+
+	str = textBox.Render(str)
+
+	if t.textareaErrorCount > 0 {
 		return redTextAreaStyle.Render(str)
 	} else {
 		return greenTextAreaStyle.Render(str)
@@ -80,6 +134,7 @@ func (t *typingPageViewBuilder) renderTextarea() string {
 }
 
 func (t *typingPageViewBuilder) addSidebar(started bool, time string) {
+	t.withSidebar = true
 	if !started {
 		t.sidebarStr = "Start typing!"
 	} else {
@@ -92,22 +147,39 @@ func (t *typingPageViewBuilder) renderSidebar(height int) string {
 }
 
 func (t *typingPageViewBuilder) addWordHolder(word string) {
+	t.withWordHolder = true
 	t.wordHolder = wordHolderStyle.Render(word)
 }
 
 func (t *typingPageViewBuilder) render() string {
-	textarea := t.renderTextarea()
-	// sidebar follows the same height as textarea
-	sidebar := t.renderSidebar(lipgloss.Height(textarea) - 2)
+	textarea := ""
+	if t.withTextarea {
+		textarea = t.renderTextarea()
+	}
+
+	sidebar := ""
+	if t.withSidebar {
+		// sidebar follows the same height as textarea
+		sidebar = t.renderSidebar(lipgloss.Height(textarea) - 2) // minus off the padding
+	}
+
 	textareaSidebar := lipgloss.JoinHorizontal(lipgloss.Top, textarea, sidebar)
 
-	// progress bar follows the same width as textarea + sidebar
-	progressBar := t.renderProgressBar(lipgloss.Width(textareaSidebar))
+	progressBar := ""
+	if t.withProgressBar {
+		// progress bar follows the same width as textarea + sidebar
+		progressBar = t.renderProgressBar(lipgloss.Width(textareaSidebar))
+	}
+
+	wordHolder := ""
+	if t.withWordHolder {
+		wordHolder = t.wordHolder
+	}
 
 	str := ""
 	str += progressBar + "\n"
 	str += textareaSidebar + "\n"
-	str += t.wordHolder + "\n"
+	str += wordHolder + "\n"
 	str += "press esc or ctrl+c to quit\n"
 	return str
 }

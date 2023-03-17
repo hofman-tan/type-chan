@@ -1,59 +1,80 @@
 package main
 
 import (
-	"strings"
-
 	tea "github.com/charmbracelet/bubbletea"
 )
 
 const maxErrorOffset int = 10
+const quoteBufferSize int = 3
+
+var countdown = 5 * 60 // 5 minutes (for timed test) TODO: convert to argument
+
+type mode int
+
+const (
+	sprint mode = iota
+	timed
+)
 
 type typingPage struct {
 	app *app
 
-	text       string
-	words      []string
-	wordHolder string
+	timer        Timer
+	text         *text
+	quoteFetcher *quoteFetcher
+	viewBuilder  *typingPageViewBuilder
 
-	currentTextIndex int // points to the currently un-typed letter
-	currentWordIndex int // points to the currently un-typed word
-	errorOffset      int // the index offset starting from currentTextIndex, marks the number of wrongly-typed letters
+	wordHolder string
+	started    bool
 
 	totalKeysPressed   int
 	correctKeysPressed int
 
 	currentState State
-	timer        Timer
-	started      bool
-	viewBuilder  *typingPageViewBuilder
+	mode         mode
 }
 
-func (t *typingPage) Init() tea.Cmd {
+func (t *typingPage) init() tea.Cmd {
 	//text := "test"
-	text := "hello there how are you my friend?"
+	//text := "hello there how are you my friend?"
 	//text := "During the first part of your life, you only become aware of happiness once you have lost it. Then an age comes, a second one, in which you already know, at the moment when you begin to experience true happiness, that you are, at the end of the day, going to lose it. When I met Belle, I understood that I had just entered this second age. I also understood that I hadn't reached the third age, in which anticipation of the loss of happiness prevents you from living."
 	//text := "‘Margareta! I’m surprised at you! We both know there’s no such thing as love!’"
 	//text := "hey»\nthere"
 
-	//text := getRandomQuote()
-	words := strings.Split(text, " ")
+	quotes := []quote{}
+	if t.mode == timed {
+		// fill up the buffer
+		for i := 0; i < quoteBufferSize; i++ {
+			quotes = append(quotes, getRandomQuote())
+		}
+		// begin endless fetching
+		t.quoteFetcher.start(quoteBufferSize)
 
-	t.text = text
-	t.words = words
+	} else {
+		quotes = append(quotes, getRandomQuote())
+	}
+
+	for _, quote := range quotes {
+		t.text.append(quote)
+	}
 
 	return nil
 }
 
 func (t *typingPage) pushWordHolder(l string) {
-	if t.errorOffset < t.remainingLettersCount() && t.errorOffset < maxErrorOffset {
+	if t.text.errorCount < t.text.remainingLettersCount() &&
+		t.text.errorCount < maxErrorOffset {
 		t.wordHolder += l
 	}
 }
 
 func (t *typingPage) popWordHolder() string {
-	if len(t.wordHolder) > 0 {
-		lastLetter := t.wordHolder[len(t.wordHolder)-1]
-		t.wordHolder = t.wordHolder[:len(t.wordHolder)-1] // remove last letter from word holder
+	word := []rune(t.wordHolder)
+
+	if len(word) > 0 {
+		lastLetter := word[len(word)-1]
+		word = word[:len(word)-1] // remove the last letter
+		t.wordHolder = string(word)
 		return string(lastLetter)
 	}
 	return ""
@@ -63,49 +84,8 @@ func (t *typingPage) clearWordHolder() {
 	t.wordHolder = ""
 }
 
-func (t *typingPage) nextLetter() {
-	t.currentTextIndex++
-}
-
-func (t *typingPage) previousLetter() {
-	t.currentTextIndex--
-}
-
-func (t *typingPage) nextWord() {
-	t.currentWordIndex++
-}
-
-func (t *typingPage) incrementErrorOffset() {
-	if t.errorOffset < t.remainingLettersCount() && t.errorOffset < maxErrorOffset {
-		t.errorOffset++
-	}
-}
-
-func (t *typingPage) decrementErrorOffset() {
-	if t.errorOffset != 0 {
-		t.errorOffset--
-	}
-}
-
 func (t *typingPage) changeState(s State) {
 	t.currentState = s
-}
-
-func (t *typingPage) remainingLettersCount() int {
-	return len(t.text) - t.currentTextIndex
-}
-
-func (t *typingPage) isEndOfTextReached() bool {
-	return t.currentTextIndex >= len(t.text)
-}
-
-func (t *typingPage) currentLetter() string {
-	return string(t.text[t.currentTextIndex])
-}
-
-// range within 0 to 1
-func (t *typingPage) currentProgress() float64 {
-	return float64(t.currentTextIndex) / float64(len(t.text))
 }
 
 func (t *typingPage) incrementKeysPressed(correct bool) {
@@ -115,7 +95,7 @@ func (t *typingPage) incrementKeysPressed(correct bool) {
 	}
 }
 
-func (t *typingPage) Update(msg tea.Msg) tea.Cmd {
+func (t *typingPage) update(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 
@@ -126,7 +106,9 @@ func (t *typingPage) Update(msg tea.Msg) tea.Cmd {
 			t.currentState.handleBackspace()
 		} else if msg.Type == tea.KeySpace {
 			t.currentState.handleSpace()
-		} else if msg.Type == tea.KeyTab || msg.Type == tea.KeyEnter || msg.Type == tea.KeyUp || msg.Type == tea.KeyDown || msg.Type == tea.KeyLeft || msg.Type == tea.KeyRight {
+		} else if msg.Type == tea.KeyEnter {
+			t.currentState.handleEnter()
+		} else if msg.Type == tea.KeyTab || msg.Type == tea.KeyUp || msg.Type == tea.KeyDown || msg.Type == tea.KeyLeft || msg.Type == tea.KeyRight {
 			// do nothing
 		} else {
 			t.currentState.handleLetter(msg.String())
@@ -137,12 +119,13 @@ func (t *typingPage) Update(msg tea.Msg) tea.Cmd {
 			return t.timer.tick()
 		}
 
+		if t.mode == timed && t.text.remainingLettersCount() < (textCountThreshold) {
+			t.text.append(<-t.quoteFetcher.quotes)
+		}
+
 		// done typing the whole text
-		if t.isEndOfTextReached() {
-			// switch to result page
-			resultPage := newResultPage(t.app, t.totalKeysPressed, t.correctKeysPressed, t.timer.getTimeElapsed())
-			t.app.changePage(resultPage)
-			return t.app.Init()
+		if t.text.isEndOfTextReached() {
+			return t.toResultPage()
 		}
 
 	case TickMsg:
@@ -150,31 +133,56 @@ func (t *typingPage) Update(msg tea.Msg) tea.Cmd {
 
 	case TimesUpMsg:
 		// time's up!
-		resultPage := newResultPage(t.app, t.totalKeysPressed, t.correctKeysPressed, t.timer.getTimeElapsed())
-		t.app.changePage(resultPage)
-		return t.app.Init()
+		return t.toResultPage()
 	}
 
 	return nil
 }
 
-func (t *typingPage) View() string {
-	if t.isEndOfTextReached() {
+func (t *typingPage) view() string {
+	if t.text.isEndOfTextReached() {
 		return ""
 	}
 
-	t.viewBuilder.addProgressBar(t.currentProgress())
-	t.viewBuilder.addTextarea(t.text, t.currentTextIndex, t.currentTextIndex+t.errorOffset)
+	t.viewBuilder.addTextarea(t.text.textLines, t.text.currentLineIndex, t.text.currentLetterIndex, t.text.errorCount)
+
+	if t.mode == timed {
+		// show elapsed time as current progress
+		timeProgress := t.timer.getTimeElapsed().Seconds() / float64(countdown)
+		t.viewBuilder.addProgressBar(timeProgress)
+		// make textarea scrolls (current line appears on top)
+		t.viewBuilder.setTextareaScroll(true)
+	} else {
+		t.viewBuilder.addProgressBar(t.text.currentProgress())
+	}
+
 	t.viewBuilder.addSidebar(t.started, t.timer.string())
 	t.viewBuilder.addWordHolder(t.wordHolder)
 	return t.viewBuilder.render()
 }
 
+func (t *typingPage) toResultPage() tea.Cmd {
+	t.quoteFetcher.stop()
+	resultPage := newResultPage(t.app, t.totalKeysPressed, t.correctKeysPressed, t.timer.getTimeElapsed())
+	t.app.changePage(resultPage)
+	return t.app.Init()
+}
+
 func newTypingPage(app *app) *typingPage {
 	typingPage := &typingPage{app: app}
 	// initially at correct state
-	typingPage.currentState = &CorrectState{typingPage: typingPage}
-	typingPage.timer = newCountUpTimer()
+	typingPage.currentState = &correctState{typingPage: typingPage}
+	typingPage.mode = timed //sprint
+
+	typingPage.text = newText()
+
+	if typingPage.mode == timed {
+		typingPage.timer = newCountDownTimer(countdown)
+	} else {
+		typingPage.timer = newCountUpTimer()
+	}
+
+	typingPage.quoteFetcher = newQuoteFetcher()
 	typingPage.viewBuilder = &typingPageViewBuilder{}
 	return typingPage
 }
