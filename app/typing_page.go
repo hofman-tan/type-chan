@@ -7,8 +7,6 @@ import (
 const maxErrorOffset int = 10
 const quoteBufferSize int = 3
 
-var countdown = 5 * 60 // 5 minutes (for timed test) TODO: convert to argument
-
 type typingPage struct {
 	app *app
 
@@ -140,7 +138,7 @@ func (t *typingPage) view() string {
 
 	if currentMode == Timed {
 		// show elapsed time as current progress
-		timeProgress := t.timer.getTimeElapsed().Seconds() / float64(countdown)
+		timeProgress := t.timer.getTimeElapsed().Seconds() / float64(Countdown)
 		t.viewBuilder.addProgressBar(timeProgress)
 		// make textarea scrolls (current line appears on top)
 		t.viewBuilder.setTextareaScroll(true)
@@ -168,7 +166,7 @@ func newTypingPage(app *app) *typingPage {
 	typingPage.text = newText()
 
 	if currentMode == Timed {
-		typingPage.timer = newCountDownTimer(countdown)
+		typingPage.timer = newCountDownTimer(Countdown)
 	} else {
 		typingPage.timer = newCountUpTimer()
 	}

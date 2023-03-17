@@ -66,8 +66,9 @@ func newCountDownTimer(seconds int) *countDownTimer {
 
 func (t *countDownTimer) tick() tea.Cmd {
 	return tea.Tick(time.Second, func(curTime time.Time) tea.Msg {
+		t.secondsLeft--
+
 		if t.secondsLeft > 0 {
-			t.secondsLeft--
 			return TickMsg(curTime)
 		} else {
 			return TimesUpMsg(curTime)

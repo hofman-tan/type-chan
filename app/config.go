@@ -8,3 +8,6 @@ const (
 )
 
 var currentMode Mode
+
+// Countdown (in seconds) for timed mode
+var Countdown = 5 * 60
