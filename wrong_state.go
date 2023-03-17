@@ -1,10 +1,10 @@
 package main
 
-type WrongState struct {
+type wrongState struct {
 	typingPage *typingPage
 }
 
-func (s *WrongState) handleLetter(l string) {
+func (s *wrongState) handleLetter(l string) {
 	s.typingPage.incrementKeysPressed(false)
 
 	// update word holder
@@ -14,7 +14,7 @@ func (s *WrongState) handleLetter(l string) {
 	s.typingPage.text.incrementErrorOffset()
 }
 
-func (s *WrongState) handleSpace() {
+func (s *wrongState) handleSpace() {
 	s.typingPage.incrementKeysPressed(false)
 
 	// update word holder
@@ -24,7 +24,7 @@ func (s *WrongState) handleSpace() {
 	s.typingPage.text.incrementErrorOffset()
 }
 
-func (s *WrongState) handleBackspace() {
+func (s *wrongState) handleBackspace() {
 	// update word holder
 	poppedLetter := s.typingPage.popWordHolder()
 
@@ -42,7 +42,7 @@ func (s *WrongState) handleBackspace() {
 	}
 }
 
-func (s *WrongState) handleEnter() {
+func (s *wrongState) handleEnter() {
 	s.typingPage.incrementKeysPressed(false)
 
 	// update word holder
@@ -52,6 +52,6 @@ func (s *WrongState) handleEnter() {
 	s.typingPage.text.incrementErrorOffset()
 }
 
-func newWrongState(t *typingPage) *WrongState {
-	return &WrongState{typingPage: t}
+func newWrongState(t *typingPage) *wrongState {
+	return &wrongState{typingPage: t}
 }

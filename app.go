@@ -9,15 +9,15 @@ type app struct {
 }
 
 func (p *app) Init() tea.Cmd {
-	return p.currentPage.Init()
+	return p.currentPage.init()
 }
 
 func (p *app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	return p, p.currentPage.Update(msg)
+	return p, p.currentPage.update(msg)
 }
 
 func (p *app) View() string {
-	return ContainerStyle.Render(p.currentPage.View())
+	return containerStyle.Render(p.currentPage.view())
 }
 
 func (p *app) changePage(page Page) {

@@ -9,11 +9,11 @@ const quoteBufferSize int = 3
 
 var countdown = 5 * 60 // 5 minutes (for timed test) TODO: convert to argument
 
-type Mode int
+type mode int
 
 const (
-	Sprint Mode = iota
-	Timed
+	sprint mode = iota
+	timed
 )
 
 type typingPage struct {
@@ -21,7 +21,7 @@ type typingPage struct {
 
 	timer        Timer
 	text         *text
-	quoteFetcher *QuoteFetcher
+	quoteFetcher *quoteFetcher
 	viewBuilder  *typingPageViewBuilder
 
 	wordHolder string
@@ -31,24 +31,24 @@ type typingPage struct {
 	correctKeysPressed int
 
 	currentState State
-	mode         Mode
+	mode         mode
 }
 
-func (t *typingPage) Init() tea.Cmd {
+func (t *typingPage) init() tea.Cmd {
 	//text := "test"
 	//text := "hello there how are you my friend?"
 	//text := "During the first part of your life, you only become aware of happiness once you have lost it. Then an age comes, a second one, in which you already know, at the moment when you begin to experience true happiness, that you are, at the end of the day, going to lose it. When I met Belle, I understood that I had just entered this second age. I also understood that I hadn't reached the third age, in which anticipation of the loss of happiness prevents you from living."
 	//text := "‘Margareta! I’m surprised at you! We both know there’s no such thing as love!’"
 	//text := "hey»\nthere"
 
-	quotes := []Quote{}
-	if t.mode == Timed {
+	quotes := []quote{}
+	if t.mode == timed {
 		// fill up the buffer
 		for i := 0; i < quoteBufferSize; i++ {
 			quotes = append(quotes, getRandomQuote())
 		}
 		// begin endless fetching
-		t.quoteFetcher.Start(quoteBufferSize)
+		t.quoteFetcher.start(quoteBufferSize)
 
 	} else {
 		quotes = append(quotes, getRandomQuote())
@@ -95,7 +95,7 @@ func (t *typingPage) incrementKeysPressed(correct bool) {
 	}
 }
 
-func (t *typingPage) Update(msg tea.Msg) tea.Cmd {
+func (t *typingPage) update(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 
@@ -119,7 +119,7 @@ func (t *typingPage) Update(msg tea.Msg) tea.Cmd {
 			return t.timer.tick()
 		}
 
-		if t.mode == Timed && t.text.remainingLettersCount() < (textCountThreshold) {
+		if t.mode == timed && t.text.remainingLettersCount() < (textCountThreshold) {
 			t.text.append(<-t.quoteFetcher.quotes)
 		}
 
@@ -139,14 +139,14 @@ func (t *typingPage) Update(msg tea.Msg) tea.Cmd {
 	return nil
 }
 
-func (t *typingPage) View() string {
+func (t *typingPage) view() string {
 	if t.text.isEndOfTextReached() {
 		return ""
 	}
 
 	t.viewBuilder.addTextarea(t.text.textLines, t.text.currentLineIndex, t.text.currentLetterIndex, t.text.errorCount)
 
-	if t.mode == Timed {
+	if t.mode == timed {
 		// show elapsed time as current progress
 		timeProgress := t.timer.getTimeElapsed().Seconds() / float64(countdown)
 		t.viewBuilder.addProgressBar(timeProgress)
@@ -162,7 +162,7 @@ func (t *typingPage) View() string {
 }
 
 func (t *typingPage) toResultPage() tea.Cmd {
-	t.quoteFetcher.Stop()
+	t.quoteFetcher.stop()
 	resultPage := newResultPage(t.app, t.totalKeysPressed, t.correctKeysPressed, t.timer.getTimeElapsed())
 	t.app.changePage(resultPage)
 	return t.app.Init()
@@ -171,12 +171,12 @@ func (t *typingPage) toResultPage() tea.Cmd {
 func newTypingPage(app *app) *typingPage {
 	typingPage := &typingPage{app: app}
 	// initially at correct state
-	typingPage.currentState = &CorrectState{typingPage: typingPage}
-	typingPage.mode = Sprint
+	typingPage.currentState = &correctState{typingPage: typingPage}
+	typingPage.mode = timed //sprint
 
 	typingPage.text = newText()
 
-	if typingPage.mode == Timed {
+	if typingPage.mode == timed {
 		typingPage.timer = newCountDownTimer(countdown)
 	} else {
 		typingPage.timer = newCountUpTimer()

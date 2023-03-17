@@ -19,7 +19,7 @@ func newText() *text {
 	}
 }
 
-func (t *text) append(q Quote) {
+func (t *text) append(q quote) {
 	if len(t.textLines) != 0 {
 		t.textLines[len(t.textLines)-1] += "\n"
 		t.textLength++

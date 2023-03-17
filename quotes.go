@@ -13,13 +13,13 @@ import (
 //https://api.quotable.io/random?minLength=200
 //http://www.randompassages.com/
 
-type QuoteFetcher struct {
-	quotes chan Quote
+type quoteFetcher struct {
+	quotes chan quote
 	cancel context.CancelFunc
 }
 
-func (q *QuoteFetcher) Start(buffer int) {
-	q.quotes = make(chan Quote, buffer)
+func (q *quoteFetcher) start(buffer int) {
+	q.quotes = make(chan quote, buffer)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	q.cancel = cancel
@@ -38,24 +38,24 @@ func (q *QuoteFetcher) Start(buffer int) {
 	}()
 }
 
-func (q *QuoteFetcher) Stop() {
+func (q *quoteFetcher) stop() {
 	if q.cancel != nil {
 		q.cancel()
 	}
 }
 
-func newQuoteFetcher() *QuoteFetcher {
-	return &QuoteFetcher{}
+func newQuoteFetcher() *quoteFetcher {
+	return &quoteFetcher{}
 }
 
-type Quote struct {
+type quote struct {
 	Text   string `json:"content"`
 	lines  []string
 	words  []string
 	length int
 }
 
-func getRandomQuote() Quote {
+func getRandomQuote() quote {
 	url := "https://api.quotable.io/random?minLength=100"
 
 	resp, err := http.Get(url)
@@ -73,7 +73,7 @@ func getRandomQuote() Quote {
 		panic(err)
 	}
 
-	var quote Quote
+	var quote quote
 	err = json.Unmarshal(body, &quote)
 	if err != nil {
 		panic(err)
@@ -96,7 +96,7 @@ func processText(text string) string {
 		}
 
 		// remove non-ASCII letter and newline character
-		if IsASCII(rune) && rune != '\n' {
+		if isASCII(rune) && rune != '\n' {
 			filtered += string(rune)
 		}
 	}
@@ -109,7 +109,7 @@ var unicodeSubstitute = map[rune]rune{
 }
 
 // https://github.com/scott-ainsworth/go-ascii/blob/e2eb5175fb10/ascii.go#L103
-func IsASCII(c rune) bool { return c <= 0x7F }
+func isASCII(c rune) bool { return c <= 0x7F }
 
 func splitTextIntoLines(text string) []string {
 	if len(text) == 0 {

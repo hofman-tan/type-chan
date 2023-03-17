@@ -7,7 +7,7 @@ const green = lipgloss.Color("#5ac700")
 const grey = lipgloss.Color("#595959")
 const white = lipgloss.Color("#ffffff")
 
-var ContainerStyle = lipgloss.NewStyle().
+var containerStyle = lipgloss.NewStyle().
 	Padding(2, 2)
 
 var textAreaStyle = lipgloss.NewStyle().

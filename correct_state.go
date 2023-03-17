@@ -1,10 +1,10 @@
 package main
 
-type CorrectState struct {
+type correctState struct {
 	typingPage *typingPage
 }
 
-func (s *CorrectState) handleLetter(l string) {
+func (s *correctState) handleLetter(l string) {
 	// update word holder
 	s.typingPage.pushWordHolder(l)
 
@@ -21,7 +21,7 @@ func (s *CorrectState) handleLetter(l string) {
 	}
 }
 
-func (s *CorrectState) handleSpace() {
+func (s *correctState) handleSpace() {
 	// update word holder
 	s.typingPage.pushWordHolder(" ")
 
@@ -42,7 +42,7 @@ func (s *CorrectState) handleSpace() {
 	}
 }
 
-func (s *CorrectState) handleBackspace() {
+func (s *correctState) handleBackspace() {
 	// update word holder
 	poppedLetter := s.typingPage.popWordHolder()
 
@@ -52,7 +52,7 @@ func (s *CorrectState) handleBackspace() {
 	}
 }
 
-func (s *CorrectState) handleEnter() { // update word holder
+func (s *correctState) handleEnter() { // update word holder
 	s.typingPage.pushWordHolder("⏎")
 
 	if s.typingPage.text.currentLetter() == "\n" {
@@ -72,6 +72,6 @@ func (s *CorrectState) handleEnter() { // update word holder
 	}
 }
 
-func newCorrectState(t *typingPage) *CorrectState {
-	return &CorrectState{typingPage: t}
+func newCorrectState(t *typingPage) *correctState {
+	return &correctState{typingPage: t}
 }
