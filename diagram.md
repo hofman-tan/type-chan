@@ -30,7 +30,7 @@ classDiagram
       app
     }
     
-    class Quote {
+    class QuoteFetcher {
     }
 
     class Timer {
@@ -67,7 +67,7 @@ classDiagram
     CorrectState <..> WrongState : transitions to
 
     TypingPage --> Text
-    TypingPage ..> Quote
+    TypingPage ..> QuoteFetcher
     TypingPage --> Timer
     CountUpTimer --|> Timer
     CountDownTimer --|> Timer

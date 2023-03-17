@@ -115,7 +115,9 @@ func splitTextIntoLines(text string) []string {
 	if len(text) == 0 {
 		return []string{}
 	}
-	wrapped := wordwrap.String(text, textareaWidth)
+
+	// minus 1 from the width to offset the space before adding it later on.
+	wrapped := wordwrap.String(text, textareaWidth-1)
 	wrapped = strings.ReplaceAll(wrapped, "\n", " \n")
 	textSlices := strings.Split(wrapped, "\n")
 	return textSlices

@@ -1,8 +1,6 @@
 package main
 
 import (
-	"math"
-
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -121,17 +119,13 @@ func (t *typingPage) Update(msg tea.Msg) tea.Cmd {
 			return t.timer.tick()
 		}
 
-		if t.mode == Timed && t.text.remainingLettersCount() < 10 {
+		if t.mode == Timed && t.text.remainingLettersCount() < (textCountThreshold) {
 			t.text.append(<-t.quoteFetcher.quotes)
 		}
 
 		// done typing the whole text
 		if t.text.isEndOfTextReached() {
-			// switch to result page
-			t.quoteFetcher.Stop()
-			resultPage := newResultPage(t.app, t.totalKeysPressed, t.correctKeysPressed, t.timer.getTimeElapsed())
-			t.app.changePage(resultPage)
-			return t.app.Init()
+			return t.toResultPage()
 		}
 
 	case TickMsg:
@@ -139,10 +133,7 @@ func (t *typingPage) Update(msg tea.Msg) tea.Cmd {
 
 	case TimesUpMsg:
 		// time's up!
-		t.quoteFetcher.cancel()
-		resultPage := newResultPage(t.app, t.totalKeysPressed, t.correctKeysPressed, t.timer.getTimeElapsed())
-		t.app.changePage(resultPage)
-		return t.app.Init()
+		return t.toResultPage()
 	}
 
 	return nil
@@ -153,20 +144,16 @@ func (t *typingPage) View() string {
 		return ""
 	}
 
+	t.viewBuilder.addTextarea(t.text.textLines, t.text.currentLineIndex, t.text.currentLetterIndex, t.text.errorCount)
+
 	if t.mode == Timed {
+		// show elapsed time as current progress
 		timeProgress := t.timer.getTimeElapsed().Seconds() / float64(countdown)
 		t.viewBuilder.addProgressBar(timeProgress)
-
-		// make current line the first line in textarea
-		lineCount := int(math.Min(textareaHeight, float64(len(t.text.textLines)-t.text.currentLineIndex)))
-		lines := t.text.textLines[t.text.currentLineIndex : t.text.currentLineIndex+lineCount]
-		t.viewBuilder.addTextarea(lines, 0, t.text.currentLetterIndex, t.text.errorCount)
-
+		// make textarea scrolls (current line appears on top)
+		t.viewBuilder.setTextareaScroll(true)
 	} else {
-
-		// render full text, with progress bar
 		t.viewBuilder.addProgressBar(t.text.currentProgress())
-		t.viewBuilder.addTextarea(t.text.textLines, t.text.currentLineIndex, t.text.currentLetterIndex, t.text.errorCount)
 	}
 
 	t.viewBuilder.addSidebar(t.started, t.timer.string())
@@ -174,11 +161,18 @@ func (t *typingPage) View() string {
 	return t.viewBuilder.render()
 }
 
+func (t *typingPage) toResultPage() tea.Cmd {
+	t.quoteFetcher.Stop()
+	resultPage := newResultPage(t.app, t.totalKeysPressed, t.correctKeysPressed, t.timer.getTimeElapsed())
+	t.app.changePage(resultPage)
+	return t.app.Init()
+}
+
 func newTypingPage(app *app) *typingPage {
 	typingPage := &typingPage{app: app}
 	// initially at correct state
 	typingPage.currentState = &CorrectState{typingPage: typingPage}
-	typingPage.mode = Timed //Sprint
+	typingPage.mode = Sprint
 
 	typingPage.text = newText()
 

@@ -9,7 +9,9 @@ import (
 )
 
 const textareaWidth = 60
-const textareaHeight = 10
+const textareaMinHeight = 5
+const textareaMaxHeight = 10
+const textCountThreshold = textareaWidth * textareaMaxHeight
 
 type typingPageViewBuilder struct {
 	withProgressBar            bool
@@ -20,6 +22,7 @@ type typingPageViewBuilder struct {
 	textareaCurrentLetterIndex int
 	textareaCurrentLineIndex   int
 	textareaErrorCount         int
+	textareaScroll             bool
 
 	withSidebar bool
 	sidebarStr  string
@@ -49,11 +52,27 @@ func (t *typingPageViewBuilder) addTextarea(lines []string, currentLineIndex int
 	t.textareaErrorCount = errorCount
 }
 
+func (t *typingPageViewBuilder) setTextareaScroll(scroll bool) {
+	t.textareaScroll = scroll
+}
+
 func (t *typingPageViewBuilder) renderTextarea() string {
 	str := ""
 	errorsToRender := 0
+	linesRendered := 0
 
-	for lineIndex, line := range t.textareaLines {
+	lineIndex := 0
+	if t.textareaScroll {
+		// make current line the first line in textarea
+		lineIndex = t.textareaCurrentLineIndex
+	}
+
+	for lineIndex < len(t.textareaLines) {
+		if t.textareaScroll && linesRendered >= textareaMaxHeight {
+			break
+		}
+
+		line := t.textareaLines[lineIndex]
 		for letterIndex, rune := range line {
 			letter := string(rune)
 			if rune == '\n' {
@@ -89,9 +108,24 @@ func (t *typingPageViewBuilder) renderTextarea() string {
 		}
 
 		str += "\n"
+		lineIndex++
+		linesRendered++
 	}
 
-	str = lipgloss.NewStyle().Width(textareaWidth).Render(str)
+	textBox := lipgloss.NewStyle().
+		Width(textareaWidth).
+		MaxWidth(textareaWidth)
+
+	if t.textareaScroll {
+		// fixed height
+		textBox = textBox.Height(textareaMaxHeight).MaxHeight(textareaMaxHeight)
+	} else {
+		// variable height
+		textBox = textBox.Height(textareaMinHeight)
+	}
+
+	str = textBox.Render(str)
+
 	if t.textareaErrorCount > 0 {
 		return redTextAreaStyle.Render(str)
 	} else {
