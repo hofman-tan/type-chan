@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
@@ -8,13 +8,6 @@ const maxErrorOffset int = 10
 const quoteBufferSize int = 3
 
 var countdown = 5 * 60 // 5 minutes (for timed test) TODO: convert to argument
-
-type mode int
-
-const (
-	sprint mode = iota
-	timed
-)
 
 type typingPage struct {
 	app *app
@@ -31,7 +24,6 @@ type typingPage struct {
 	correctKeysPressed int
 
 	currentState State
-	mode         mode
 }
 
 func (t *typingPage) init() tea.Cmd {
@@ -42,7 +34,7 @@ func (t *typingPage) init() tea.Cmd {
 	//text := "hey»\nthere"
 
 	quotes := []quote{}
-	if t.mode == timed {
+	if currentMode == Timed {
 		// fill up the buffer
 		for i := 0; i < quoteBufferSize; i++ {
 			quotes = append(quotes, getRandomQuote())
@@ -119,7 +111,7 @@ func (t *typingPage) update(msg tea.Msg) tea.Cmd {
 			return t.timer.tick()
 		}
 
-		if t.mode == timed && t.text.remainingLettersCount() < (textCountThreshold) {
+		if currentMode == Timed && t.text.remainingLettersCount() < (textCountThreshold) {
 			t.text.append(<-t.quoteFetcher.quotes)
 		}
 
@@ -146,7 +138,7 @@ func (t *typingPage) view() string {
 
 	t.viewBuilder.addTextarea(t.text.textLines, t.text.currentLineIndex, t.text.currentLetterIndex, t.text.errorCount)
 
-	if t.mode == timed {
+	if currentMode == Timed {
 		// show elapsed time as current progress
 		timeProgress := t.timer.getTimeElapsed().Seconds() / float64(countdown)
 		t.viewBuilder.addProgressBar(timeProgress)
@@ -172,11 +164,10 @@ func newTypingPage(app *app) *typingPage {
 	typingPage := &typingPage{app: app}
 	// initially at correct state
 	typingPage.currentState = &correctState{typingPage: typingPage}
-	typingPage.mode = timed //sprint
 
 	typingPage.text = newText()
 
-	if typingPage.mode == timed {
+	if currentMode == Timed {
 		typingPage.timer = newCountDownTimer(countdown)
 	} else {
 		typingPage.timer = newCountUpTimer()
