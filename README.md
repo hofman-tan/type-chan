@@ -2,7 +2,7 @@
 
 A TUI typing test powered by [Bubble Tea](https://github.com/charmbracelet/bubbletea) and [Lip Gloss](https://github.com/charmbracelet/lipgloss).
 
-Quotes/sentences for typing are retrieved from [api.quotable.io](api.quotable.io)
+Quotes/sentences for typing are retrieved from [quotable](https://github.com/lukePeavey/quotable)
 
 ```go
 # Fetch dependencies
