@@ -12,7 +12,7 @@ go mod download
 go build .
 
 # Launch the test!
-./typechan
+./typechan sprint
 ```
 ---
 
