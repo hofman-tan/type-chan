@@ -4,7 +4,7 @@ A TUI typing test powered by [Bubble Tea](https://github.com/charmbracelet/bubbl
 
 Quotes/sentences for typing are retrieved from [quotable](https://github.com/lukePeavey/quotable)
 
-```go
+```shell
 # Fetch dependencies
 go mod download 
 
@@ -20,13 +20,13 @@ You can launch the test in 2 different modes:
 
 ## Sprint mode 🏃🏻‍♀️
 Complete the sentence as fast as you can.
-```go
+```shell
 ./typechan sprint
 ```
 
 ## Timed mode ⏱️
 Type as far as you can within the time limit.
-```go
+```shell
 # Starts a 5-minute test
 ./typechan timed
 
