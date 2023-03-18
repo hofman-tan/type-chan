@@ -13,11 +13,14 @@ import (
 //https://api.quotable.io/random?minLength=200
 //http://www.randompassages.com/
 
+// quoteFetcher is used to fetch quotes continuously from external source.
+// Quotes are then queued inside the quotes buffer.
 type quoteFetcher struct {
 	quotes chan quote
 	cancel context.CancelFunc
 }
 
+// start kickstarts the continuous fetch process in a goroutine.
 func (q *quoteFetcher) start(buffer int) {
 	q.quotes = make(chan quote, buffer)
 
@@ -38,16 +41,19 @@ func (q *quoteFetcher) start(buffer int) {
 	}()
 }
 
+// stop stops the continuous fetch by terminating the underlying goroutine.
 func (q *quoteFetcher) stop() {
 	if q.cancel != nil {
 		q.cancel()
 	}
 }
 
+// newQuoteFetcher returns a new instance of quoteFetcher.
 func newQuoteFetcher() *quoteFetcher {
 	return &quoteFetcher{}
 }
 
+// quote stores the quote data.
 type quote struct {
 	Text   string `json:"content"`
 	lines  []string
@@ -55,6 +61,8 @@ type quote struct {
 	length int
 }
 
+// getRandomQuote reaches to the external API and retrieves a random quote.
+// The quote will be returned as an instance of quote object.
 func getRandomQuote() quote {
 	url := "https://api.quotable.io/random?minLength=100"
 
@@ -80,13 +88,16 @@ func getRandomQuote() quote {
 	}
 
 	quote.Text = processText(quote.Text)
-	quote.lines = splitTextIntoLines(quote.Text)
+	quote.lines = splitTextIntoLines(quote.Text, textareaWidth)
 	quote.words = strings.Split(quote.Text, " ")
 	quote.length = len(quote.Text)
 
 	return quote
 }
 
+// processText sanitizes the given text string by substituting any unicode
+// characters with its equivalent ASCII representation, and removes any
+// non-ASCII and newline characters from the string.
 func processText(text string) string {
 	filtered := ""
 	for _, rune := range text {
@@ -103,21 +114,27 @@ func processText(text string) string {
 	return filtered
 }
 
+// unicodeSubstitute is a table that maps unicode character to its
+// equivalent/similar ASCII character.
 var unicodeSubstitute = map[rune]rune{
 	'‘': '\'',
 	'’': '\'',
 }
 
-// https://github.com/scott-ainsworth/go-ascii/blob/e2eb5175fb10/ascii.go#L103
+// isASCII checks if the given rune falls under the ASCII charset.
+// taken from: https://github.com/scott-ainsworth/go-ascii/blob/e2eb5175fb10/ascii.go#L103
 func isASCII(c rune) bool { return c <= 0x7F }
 
-func splitTextIntoLines(text string) []string {
+// splitTextIntoLines splits the given text string into slices of strings,
+// while perserving any trailing spaces. The length of strings are bounded
+// by the specified limit.
+func splitTextIntoLines(text string, limit int) []string {
 	if len(text) == 0 {
 		return []string{}
 	}
 
-	// minus 1 from the width to offset the space before adding it later on.
-	wrapped := wordwrap.String(text, textareaWidth-1)
+	// minus 1 from the limit to offset the space before adding it later on.
+	wrapped := wordwrap.String(text, limit-1)
 	wrapped = strings.ReplaceAll(wrapped, "\n", " \n")
 	textSlices := strings.Split(wrapped, "\n")
 	return textSlices

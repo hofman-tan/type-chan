@@ -7,6 +7,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+// resultPage is the page model for displaying typing test results.
 type resultPage struct {
 	app *app
 
@@ -62,6 +63,7 @@ func (r *resultPage) view() string {
 	return str
 }
 
+// newResultPage initialises and returns a new instance of resultPage.
 func newResultPage(
 	app *app,
 	totalKeysPressed int,

@@ -1,5 +1,7 @@
 package app
 
+// wrongState controls the behaviour of the typing page,
+// when the user has made any mistakes in typing.
 type wrongState struct {
 	typingPage *typingPage
 }
@@ -58,6 +60,7 @@ func (s *wrongState) handleEnter() {
 	}
 }
 
+// newWrongState initialises and returns a new instance of wrongState
 func newWrongState(t *typingPage) *wrongState {
 	return &wrongState{typingPage: t}
 }

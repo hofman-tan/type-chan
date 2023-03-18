@@ -1,5 +1,7 @@
 package app
 
+// correctState controls the behaviour of the typing page,
+// when the user has made no mistakes in typing.
 type correctState struct {
 	typingPage *typingPage
 }
@@ -72,6 +74,7 @@ func (s *correctState) handleEnter() { // update word holder
 	}
 }
 
+// newCorrectState initialises and returns a new instance of correctState
 func newCorrectState(t *typingPage) *correctState {
 	return &correctState{typingPage: t}
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// rootCmd serves as the entry point to the program.
 var rootCmd = &cobra.Command{
 	Use:   "typechan",
 	Short: "Typechan is a TUI typing test",

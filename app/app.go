@@ -7,6 +7,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+// app represents the main typing test program.
+// It keeps track of the page the user is currently on.
 type app struct {
 	currentPage Page
 }
@@ -23,14 +25,17 @@ func (a *app) View() string {
 	return containerStyle.Render(a.currentPage.view())
 }
 
+// changePage sets the current page to the given value.
 func (a *app) changePage(page Page) {
 	a.currentPage = page
 }
 
+// New returns a new app instance.
 func New() *app {
 	return &app{}
 }
 
+// Start launches the program with the given mode.
 func (a *app) Start(m Mode) {
 	currentMode = m
 

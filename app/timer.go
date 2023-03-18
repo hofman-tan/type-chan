@@ -7,16 +7,24 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+// Timer is the interface for all concrete timers.
 type Timer interface {
+	// tick determines the refresh rate of the timer display in the TUI.
 	tick() tea.Cmd
+
+	// getTimeElapsed returns the duration since the start of timer.
 	getTimeElapsed() time.Duration
+
+	// string returns the time in string.
 	string() string
 }
 
+// countUpTimer is a timer that counts from 0.
 type countUpTimer struct {
 	startTime time.Time
 }
 
+// countDownTimer represents a stopwatch.
 type countDownTimer struct {
 	seconds     int
 	secondsLeft int
@@ -25,6 +33,7 @@ type countDownTimer struct {
 type TickMsg time.Time
 type TimesUpMsg time.Time
 
+// newCountUpTimer returns a new instance of countUpTimer.
 func newCountUpTimer() *countUpTimer {
 	return &countUpTimer{}
 }
@@ -56,6 +65,7 @@ func (t *countUpTimer) getTimeElapsed() time.Duration {
 	return time.Since(t.startTime)
 }
 
+// newCountDownTimer initialises and returns a new instance of countDownTimer.
 func newCountDownTimer(seconds int) *countDownTimer {
 	return &countDownTimer{
 		seconds:     seconds,

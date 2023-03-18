@@ -4,6 +4,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+// typingPage is the page model for the typing test program.
 type typingPage struct {
 	app *app
 
@@ -48,10 +49,12 @@ func (t *typingPage) init() tea.Cmd {
 	return nil
 }
 
+// pushWordHolder appends the letter to the word holder.
 func (t *typingPage) pushWordHolder(l string) {
 	t.wordHolder += l
 }
 
+// popWordHolder removes the last letter from the word holder.
 func (t *typingPage) popWordHolder() string {
 	word := []rune(t.wordHolder)
 
@@ -64,14 +67,18 @@ func (t *typingPage) popWordHolder() string {
 	return ""
 }
 
+// clearWordHolder clears the word holder.
 func (t *typingPage) clearWordHolder() {
 	t.wordHolder = ""
 }
 
+// changeState sets the current state to the given value.
 func (t *typingPage) changeState(s State) {
 	t.currentState = s
 }
 
+// incrementKeysPressed increments the total number of keys pressed.
+// 'correct' param denotes whether the current key pressed is correct.
 func (t *typingPage) incrementKeysPressed(correct bool) {
 	t.totalKeysPressed++
 	if correct {
@@ -145,6 +152,7 @@ func (t *typingPage) view() string {
 	return t.viewBuilder.render()
 }
 
+// toResultPage initialises and transitions to result page.
 func (t *typingPage) toResultPage() tea.Cmd {
 	t.quoteFetcher.stop()
 	resultPage := newResultPage(t.app, t.totalKeysPressed, t.correctKeysPressed, t.timer.getTimeElapsed())
@@ -152,11 +160,11 @@ func (t *typingPage) toResultPage() tea.Cmd {
 	return t.app.Init()
 }
 
+// newTypingPage initialises and returns a new instance of typingPage.
 func newTypingPage(app *app) *typingPage {
 	typingPage := &typingPage{app: app}
 	// initially at correct state
-	typingPage.currentState = &correctState{typingPage: typingPage}
-
+	typingPage.currentState = newCorrectState(typingPage)
 	typingPage.text = newText()
 
 	if currentMode == Timed {
@@ -166,6 +174,6 @@ func newTypingPage(app *app) *typingPage {
 	}
 
 	typingPage.quoteFetcher = newQuoteFetcher()
-	typingPage.viewBuilder = &typingPageViewBuilder{}
+	typingPage.viewBuilder = newViewBuilder()
 	return typingPage
 }

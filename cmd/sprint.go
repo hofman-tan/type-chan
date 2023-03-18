@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// sprintCmd launches the test in sprint mode.
+// sprintCmd launches the typing test in sprint mode.
 var sprintCmd = &cobra.Command{
 	Use:   "sprint",
 	Short: "Begins the test in sprint mode",

@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// timedCmd launches the test in timed mode.
+// timedCmd launches the typing test in timed mode.
 var timedCmd = &cobra.Command{
 	Use:   "timed",
 	Short: "Begins the test in timed mode",
