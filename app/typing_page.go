@@ -4,9 +4,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-const maxErrorOffset int = 10
-const quoteBufferSize int = 3
-
 type typingPage struct {
 	app *app
 
@@ -52,10 +49,7 @@ func (t *typingPage) init() tea.Cmd {
 }
 
 func (t *typingPage) pushWordHolder(l string) {
-	if t.text.errorCount < t.text.remainingLettersCount() &&
-		t.text.errorCount < maxErrorOffset {
-		t.wordHolder += l
-	}
+	t.wordHolder += l
 }
 
 func (t *typingPage) popWordHolder() string {

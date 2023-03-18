@@ -8,11 +8,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-const textareaWidth = 60
-const textareaMinHeight = 5
-const textareaMaxHeight = 10
-const textCountThreshold = textareaWidth * textareaMaxHeight
-
 type typingPageViewBuilder struct {
 	withProgressBar            bool
 	progressBarCurrentProgress float64
@@ -38,8 +33,8 @@ func (t *typingPageViewBuilder) addProgressBar(currentProgress float64) {
 
 func (t *typingPageViewBuilder) renderProgressBar(totalProgress int) string {
 	times := int(math.Floor(t.progressBarCurrentProgress * float64(totalProgress)))
-	bar := progressBarContentStyle.Render(strings.Repeat("_", times))
-	blank := progressBarBlankStyle.Render(strings.Repeat("_", totalProgress-times))
+	bar := whiteTextStyle.Render(strings.Repeat("_", times))
+	blank := greyTextStyle.Render(strings.Repeat("_", totalProgress-times))
 
 	return bar + blank
 }
@@ -82,18 +77,18 @@ func (t *typingPageViewBuilder) renderTextarea() string {
 			if lineIndex < t.textareaCurrentLineIndex ||
 				(lineIndex == t.textareaCurrentLineIndex && letterIndex < t.textareaCurrentLetterIndex) {
 				// past letters
-				letter = pastTextStyle.Render(letter)
+				letter = greyTextStyle.Render(letter)
 			}
 
 			if lineIndex == t.textareaCurrentLineIndex && letterIndex == t.textareaCurrentLetterIndex {
 				// current letter
-				letter = currentLetterStyle.Render(letter)
+				letter = underlinedStyle.Render(letter)
 				errorsToRender = t.textareaErrorCount
 			}
 
 			if errorsToRender > 0 {
 				// wrong letters
-				letter = errorOffsetStyle.Render(letter)
+				letter = redTextStyle.Render(letter)
 				errorsToRender--
 			}
 
@@ -112,24 +107,24 @@ func (t *typingPageViewBuilder) renderTextarea() string {
 		linesRendered++
 	}
 
-	textBox := lipgloss.NewStyle().
+	textBoxStyle := lipgloss.NewStyle().
 		Width(textareaWidth).
 		MaxWidth(textareaWidth)
 
 	if t.textareaScroll {
 		// fixed height
-		textBox = textBox.Height(textareaMaxHeight).MaxHeight(textareaMaxHeight)
+		textBoxStyle = textBoxStyle.Height(textareaMaxHeight).MaxHeight(textareaMaxHeight)
 	} else {
 		// variable height
-		textBox = textBox.Height(textareaMinHeight)
+		textBoxStyle = textBoxStyle.Height(textareaMinHeight)
 	}
 
-	str = textBox.Render(str)
+	str = textBoxStyle.Render(str)
 
 	if t.textareaErrorCount > 0 {
-		return redTextAreaStyle.Render(str)
+		return redBorderStyle.Render(str)
 	} else {
-		return greenTextAreaStyle.Render(str)
+		return greenBorderStyle.Render(str)
 	}
 }
 

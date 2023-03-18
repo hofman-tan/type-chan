@@ -7,21 +7,25 @@ type wrongState struct {
 func (s *wrongState) handleLetter(l string) {
 	s.typingPage.incrementKeysPressed(false)
 
-	// update word holder
-	s.typingPage.pushWordHolder(l)
+	if s.typingPage.text.notErrorCountLimitReached() {
+		// update word holder
+		s.typingPage.pushWordHolder(l)
 
-	// update textarea
-	s.typingPage.text.incrementErrorOffset()
+		// update textarea
+		s.typingPage.text.incrementErrorCount()
+	}
 }
 
 func (s *wrongState) handleSpace() {
 	s.typingPage.incrementKeysPressed(false)
 
-	// update word holder
-	s.typingPage.pushWordHolder(" ")
+	if s.typingPage.text.notErrorCountLimitReached() {
+		// update word holder
+		s.typingPage.pushWordHolder(" ")
 
-	// update textarea
-	s.typingPage.text.incrementErrorOffset()
+		// update textarea
+		s.typingPage.text.incrementErrorCount()
+	}
 }
 
 func (s *wrongState) handleBackspace() {
@@ -31,7 +35,7 @@ func (s *wrongState) handleBackspace() {
 	// update textarea
 	if poppedLetter != "" {
 		if s.typingPage.text.hasError() {
-			s.typingPage.text.decrementErrorOffset()
+			s.typingPage.text.decrementErrorCount()
 		} else {
 			s.typingPage.text.previousLetter()
 		}
@@ -45,11 +49,13 @@ func (s *wrongState) handleBackspace() {
 func (s *wrongState) handleEnter() {
 	s.typingPage.incrementKeysPressed(false)
 
-	// update word holder
-	s.typingPage.pushWordHolder("⏎")
+	if s.typingPage.text.notErrorCountLimitReached() {
+		// update word holder
+		s.typingPage.pushWordHolder("⏎")
 
-	// update textarea
-	s.typingPage.text.incrementErrorOffset()
+		// update textarea
+		s.typingPage.text.incrementErrorCount()
+	}
 }
 
 func newWrongState(t *typingPage) *wrongState {

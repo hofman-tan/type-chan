@@ -56,7 +56,7 @@ func (r *resultPage) view() string {
 	statStr += fmt.Sprintf("Total keys pressed: %d\n", r.totalKeysPressed)
 	statStr += fmt.Sprintf("Correct keys: %d", r.correctKeysPressed)
 
-	str := textAreaStyle.Render(statStr)
+	str := borderStyle.Render(statStr)
 	str += "\npress enter to start new game"
 	str += "\npress esc or ctrl+c to quit\n"
 	return str

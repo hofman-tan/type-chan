@@ -16,7 +16,7 @@ func (s *correctState) handleLetter(l string) {
 	} else {
 		// wrong letter
 		s.typingPage.incrementKeysPressed(false)
-		s.typingPage.text.incrementErrorOffset()
+		s.typingPage.text.incrementErrorCount()
 		s.typingPage.changeState(newWrongState(s.typingPage))
 	}
 }
@@ -37,7 +37,7 @@ func (s *correctState) handleSpace() {
 	} else {
 		// wrong letter
 		s.typingPage.incrementKeysPressed(false)
-		s.typingPage.text.incrementErrorOffset()
+		s.typingPage.text.incrementErrorCount()
 		s.typingPage.changeState(newWrongState(s.typingPage))
 	}
 }
@@ -67,7 +67,7 @@ func (s *correctState) handleEnter() { // update word holder
 	} else {
 		// wrong letter
 		s.typingPage.incrementKeysPressed(false)
-		s.typingPage.text.incrementErrorOffset()
+		s.typingPage.text.incrementErrorCount()
 		s.typingPage.changeState(newWrongState(s.typingPage))
 	}
 }

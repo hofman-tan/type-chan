@@ -58,20 +58,22 @@ func (t *text) nextWord() {
 	t.currentWordIndex++
 }
 
-func (t *text) incrementErrorOffset() {
-	if t.errorCount < t.remainingLettersCount() && t.errorCount < maxErrorOffset {
-		t.errorCount++
+func (t *text) incrementErrorCount() {
+	t.errorCount++
+}
+
+func (t *text) decrementErrorCount() {
+	if t.hasError() {
+		t.errorCount--
 	}
+}
+
+func (t *text) notErrorCountLimitReached() bool {
+	return t.errorCount < t.remainingLettersCount() && t.errorCount < maxErrorCount
 }
 
 func (t *text) hasError() bool {
 	return t.errorCount > 0
-}
-
-func (t *text) decrementErrorOffset() {
-	if t.hasError() {
-		t.errorCount--
-	}
 }
 
 func (t *text) remainingLettersCount() int {
