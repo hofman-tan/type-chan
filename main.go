@@ -1,6 +1,6 @@
 package main
 
-import "type-chan/cmd"
+import "typechan/cmd"
 
 func main() {
 	cmd.Execute()

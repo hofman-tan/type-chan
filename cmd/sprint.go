@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"type-chan/app"
+	"typechan/app"
 
 	"github.com/spf13/cobra"
 )

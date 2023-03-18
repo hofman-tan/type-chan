@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"type-chan/app"
+	"typechan/app"
 
 	"github.com/spf13/cobra"
 )
@@ -24,6 +24,6 @@ var timedCmd = &cobra.Command{
 }
 
 func init() {
-	timedCmd.PersistentFlags().IntVarP(&app.Countdown, "countdown", "c", app.Countdown, "Timer countdown in seconds")
+	timedCmd.PersistentFlags().IntVarP(&app.Countdown, "seconds", "s", app.Countdown, "Timer countdown in seconds")
 	rootCmd.AddCommand(timedCmd)
 }
