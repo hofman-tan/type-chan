@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -37,24 +38,22 @@ func (t *countUpTimer) tick() tea.Cmd {
 	})
 }
 
-// func fmtDuration(d time.Duration) string {
-// 	d = d.Round(10 * time.Millisecond)
-// 	m := d / time.Minute
-// 	d -= m * time.Minute
-
-// 	s := d / time.Second
-// 	d -= s * time.Second
-
-// 	ms := d / time.Millisecond
-// 	return fmt.Sprintf("%02d:%02d:%02d", m, s, ms)
-// }
-
 func (t *countUpTimer) string() string {
-	return t.getTimeElapsed().String()
+	d := t.getTimeElapsed()
+
+	ms := d.Milliseconds() % 1000
+	msStr := fmt.Sprintf("%03d", ms)[:2]
+	s := int(d.Seconds()) % 60
+	m := int(d.Minutes())
+
+	return fmt.Sprintf("%02d:%02d:%s", m, s, msStr)
 }
 
 func (t *countUpTimer) getTimeElapsed() time.Duration {
-	return time.Since(t.startTime).Round(10 * time.Millisecond)
+	if t.startTime.IsZero() {
+		return time.Duration(0)
+	}
+	return time.Since(t.startTime)
 }
 
 func newCountDownTimer(seconds int) *countDownTimer {
@@ -81,6 +80,10 @@ func (t *countDownTimer) getTimeElapsed() time.Duration {
 }
 
 func (t *countDownTimer) string() string {
-	duration := time.Duration(float64(t.secondsLeft) * float64(time.Second))
-	return duration.String()
+	d := time.Duration(float64(t.secondsLeft) * float64(time.Second))
+
+	s := int(d.Seconds()) % 60
+	m := int(d.Minutes())
+
+	return fmt.Sprintf("%02d:%02d", m, s)
 }

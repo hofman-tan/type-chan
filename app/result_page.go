@@ -50,7 +50,7 @@ func (r *resultPage) view() string {
 	statStr += fmt.Sprintf("Accuracy: %.2f%%\n", r.accuracy*100)
 	statStr += fmt.Sprintf("Adjusted WPM: %.2f\n\n", r.adjustedWPM)
 
-	statStr += fmt.Sprintf("Time: %v\n", r.elapsedTime)
+	statStr += fmt.Sprintf("Time: %v\n", r.elapsedTime.Round(10*time.Millisecond))
 	statStr += fmt.Sprintf("CPM: %.2f\n\n", r.cpm)
 
 	statStr += fmt.Sprintf("Total keys pressed: %d\n", r.totalKeysPressed)
