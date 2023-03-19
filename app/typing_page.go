@@ -22,7 +22,7 @@ type typingPage struct {
 	currentState State
 }
 
-func (t *typingPage) init() tea.Cmd {
+func (t *typingPage) init() {
 	//text := "test"
 	//text := "hello there how are you my friend?"
 	//text := "During the first part of your life, you only become aware of happiness once you have lost it. Then an age comes, a second one, in which you already know, at the moment when you begin to experience true happiness, that you are, at the end of the day, going to lose it. When I met Belle, I understood that I had just entered this second age. I also understood that I hadn't reached the third age, in which anticipation of the loss of happiness prevents you from living."
@@ -45,8 +45,6 @@ func (t *typingPage) init() tea.Cmd {
 	for _, quote := range quotes {
 		t.text.append(quote)
 	}
-
-	return nil
 }
 
 // pushWordHolder appends the letter to the word holder.
@@ -116,7 +114,7 @@ func (t *typingPage) update(msg tea.Msg) tea.Cmd {
 
 		// done typing the whole text
 		if t.text.isEndOfTextReached() {
-			return t.toResultPage()
+			t.toResultPage()
 		}
 
 	case TickMsg:
@@ -124,7 +122,7 @@ func (t *typingPage) update(msg tea.Msg) tea.Cmd {
 
 	case TimesUpMsg:
 		// time's up!
-		return t.toResultPage()
+		t.toResultPage()
 	}
 
 	return nil
@@ -153,11 +151,10 @@ func (t *typingPage) view() string {
 }
 
 // toResultPage initialises and transitions to result page.
-func (t *typingPage) toResultPage() tea.Cmd {
+func (t *typingPage) toResultPage() {
 	t.quoteFetcher.stop()
 	resultPage := newResultPage(t.app, t.totalKeysPressed, t.correctKeysPressed, t.timer.getTimeElapsed())
 	t.app.changePage(resultPage)
-	return t.app.Init()
 }
 
 // newTypingPage initialises and returns a new instance of typingPage.

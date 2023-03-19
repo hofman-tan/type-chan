@@ -14,7 +14,7 @@ type app struct {
 }
 
 func (a *app) Init() tea.Cmd {
-	return a.currentPage.init()
+	return tea.ClearScreen
 }
 
 func (a *app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -28,6 +28,7 @@ func (a *app) View() string {
 // changePage sets the current page to the given value.
 func (a *app) changePage(page Page) {
 	a.currentPage = page
+	a.currentPage.init()
 }
 
 // New returns a new app instance.
