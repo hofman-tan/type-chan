@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"fmt"
@@ -8,11 +8,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-const textareaWidth = 60
-const textareaMinHeight = 5
-const textareaMaxHeight = 10
-const textCountThreshold = textareaWidth * textareaMaxHeight
-
+// typingPageViewBuilder is a view builder that constructs the typing page TUI.
 type typingPageViewBuilder struct {
 	withProgressBar            bool
 	progressBarCurrentProgress float64
@@ -31,19 +27,27 @@ type typingPageViewBuilder struct {
 	wordHolder     string
 }
 
+// newViewBuilder returns a new instance of typingPageViewBuilder.
+func newViewBuilder() *typingPageViewBuilder {
+	return &typingPageViewBuilder{}
+}
+
+// addProgressBar configures the builder to render the progress bar in the final TUI.
 func (t *typingPageViewBuilder) addProgressBar(currentProgress float64) {
 	t.withProgressBar = true
 	t.progressBarCurrentProgress = currentProgress
 }
 
+// renderProgressBar returns the TUI string representation of the progress bar.
 func (t *typingPageViewBuilder) renderProgressBar(totalProgress int) string {
 	times := int(math.Floor(t.progressBarCurrentProgress * float64(totalProgress)))
-	bar := progressBarContentStyle.Render(strings.Repeat("_", times))
-	blank := progressBarBlankStyle.Render(strings.Repeat("_", totalProgress-times))
+	bar := whiteTextStyle.Render(strings.Repeat("_", times))
+	blank := greyTextStyle.Render(strings.Repeat("_", totalProgress-times))
 
 	return bar + blank
 }
 
+// addTextarea configures the builder to render the text area in the final TUI.
 func (t *typingPageViewBuilder) addTextarea(lines []string, currentLineIndex int, currentLetterIndex int, errorCount int) {
 	t.withTextarea = true
 	t.textareaLines = lines
@@ -52,10 +56,13 @@ func (t *typingPageViewBuilder) addTextarea(lines []string, currentLineIndex int
 	t.textareaErrorCount = errorCount
 }
 
+// setTextareaScroll sets the text area to scroll mode, which fixes the
+// current line to the top of text area.
 func (t *typingPageViewBuilder) setTextareaScroll(scroll bool) {
 	t.textareaScroll = scroll
 }
 
+// renderTextarea returns the TUI string representation of the textarea.
 func (t *typingPageViewBuilder) renderTextarea() string {
 	str := ""
 	errorsToRender := 0
@@ -82,18 +89,18 @@ func (t *typingPageViewBuilder) renderTextarea() string {
 			if lineIndex < t.textareaCurrentLineIndex ||
 				(lineIndex == t.textareaCurrentLineIndex && letterIndex < t.textareaCurrentLetterIndex) {
 				// past letters
-				letter = pastTextStyle.Render(letter)
+				letter = greyTextStyle.Render(letter)
 			}
 
 			if lineIndex == t.textareaCurrentLineIndex && letterIndex == t.textareaCurrentLetterIndex {
 				// current letter
-				letter = currentLetterStyle.Render(letter)
+				letter = underlinedStyle.Render(letter)
 				errorsToRender = t.textareaErrorCount
 			}
 
 			if errorsToRender > 0 {
 				// wrong letters
-				letter = errorOffsetStyle.Render(letter)
+				letter = redTextStyle.Render(letter)
 				errorsToRender--
 			}
 
@@ -112,27 +119,28 @@ func (t *typingPageViewBuilder) renderTextarea() string {
 		linesRendered++
 	}
 
-	textBox := lipgloss.NewStyle().
+	textBoxStyle := lipgloss.NewStyle().
 		Width(textareaWidth).
 		MaxWidth(textareaWidth)
 
 	if t.textareaScroll {
 		// fixed height
-		textBox = textBox.Height(textareaMaxHeight).MaxHeight(textareaMaxHeight)
+		textBoxStyle = textBoxStyle.Height(textareaMaxHeight).MaxHeight(textareaMaxHeight)
 	} else {
 		// variable height
-		textBox = textBox.Height(textareaMinHeight)
+		textBoxStyle = textBoxStyle.Height(textareaMinHeight)
 	}
 
-	str = textBox.Render(str)
+	str = textBoxStyle.Render(str)
 
 	if t.textareaErrorCount > 0 {
-		return redTextAreaStyle.Render(str)
+		return redBorderStyle.Render(str)
 	} else {
-		return greenTextAreaStyle.Render(str)
+		return greenBorderStyle.Render(str)
 	}
 }
 
+// addSidebar configures the builder to render the sidebar in the final TUI.
 func (t *typingPageViewBuilder) addSidebar(started bool, time string) {
 	t.withSidebar = true
 	if !started {
@@ -142,15 +150,23 @@ func (t *typingPageViewBuilder) addSidebar(started bool, time string) {
 	}
 }
 
+// renderSidebar returns the TUI string representation of the sidebar.
 func (t *typingPageViewBuilder) renderSidebar(height int) string {
 	return sidebarStyle.Height(height).Render(t.sidebarStr)
 }
 
+// addWordHolder configures the builder to render the word holder in the final TUI.
 func (t *typingPageViewBuilder) addWordHolder(word string) {
 	t.withWordHolder = true
 	t.wordHolder = wordHolderStyle.Render(word)
 }
 
+// renderWordHolder returns the TUI string representation of the word holder.
+func (t *typingPageViewBuilder) renderWordHolder() string {
+	return t.wordHolder
+}
+
+// render constructs and view and returns the final TUI string.
 func (t *typingPageViewBuilder) render() string {
 	textarea := ""
 	if t.withTextarea {
@@ -173,7 +189,7 @@ func (t *typingPageViewBuilder) render() string {
 
 	wordHolder := ""
 	if t.withWordHolder {
-		wordHolder = t.wordHolder
+		wordHolder = t.renderWordHolder()
 	}
 
 	str := ""

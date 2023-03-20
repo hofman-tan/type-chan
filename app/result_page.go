@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"fmt"
@@ -7,6 +7,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+// resultPage is the page model for displaying typing test results.
 type resultPage struct {
 	app *app
 
@@ -20,14 +21,12 @@ type resultPage struct {
 	cpm         float64
 }
 
-func (r *resultPage) init() tea.Cmd {
+func (r *resultPage) init() {
 	// https://support.sunburst.com/hc/en-us/articles/229335208-Type-to-Learn-How-are-Words-Per-Minute-and-Accuracy-Calculated-
 	r.grossWPM = (float64(r.totalKeysPressed) / 5) / r.elapsedTime.Minutes()
 	r.accuracy = (float64(r.correctKeysPressed) / float64(r.totalKeysPressed)) // range 0 to 1
 	r.adjustedWPM = r.grossWPM * r.accuracy
 	r.cpm = float64(r.totalKeysPressed) / r.elapsedTime.Minutes()
-
-	return nil
 }
 
 func (r *resultPage) update(msg tea.Msg) tea.Cmd {
@@ -39,7 +38,6 @@ func (r *resultPage) update(msg tea.Msg) tea.Cmd {
 		} else if msg.Type == tea.KeyEnter {
 			// switch to typing page
 			r.app.changePage(newTypingPage(r.app))
-			return r.app.Init()
 		}
 	}
 	return nil
@@ -50,18 +48,19 @@ func (r *resultPage) view() string {
 	statStr += fmt.Sprintf("Accuracy: %.2f%%\n", r.accuracy*100)
 	statStr += fmt.Sprintf("Adjusted WPM: %.2f\n\n", r.adjustedWPM)
 
-	statStr += fmt.Sprintf("Time: %v\n", r.elapsedTime)
+	statStr += fmt.Sprintf("Time: %v\n", r.elapsedTime.Round(10*time.Millisecond))
 	statStr += fmt.Sprintf("CPM: %.2f\n\n", r.cpm)
 
 	statStr += fmt.Sprintf("Total keys pressed: %d\n", r.totalKeysPressed)
 	statStr += fmt.Sprintf("Correct keys: %d", r.correctKeysPressed)
 
-	str := textAreaStyle.Render(statStr)
+	str := borderStyle.Render(statStr)
 	str += "\npress enter to start new game"
 	str += "\npress esc or ctrl+c to quit\n"
 	return str
 }
 
+// newResultPage initialises and returns a new instance of resultPage.
 func newResultPage(
 	app *app,
 	totalKeysPressed int,

@@ -1,21 +1,10 @@
-package main
+package app
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-const maxErrorOffset int = 10
-const quoteBufferSize int = 3
-
-var countdown = 5 * 60 // 5 minutes (for timed test) TODO: convert to argument
-
-type mode int
-
-const (
-	sprint mode = iota
-	timed
-)
-
+// typingPage is the page model for the typing test program.
 type typingPage struct {
 	app *app
 
@@ -31,10 +20,9 @@ type typingPage struct {
 	correctKeysPressed int
 
 	currentState State
-	mode         mode
 }
 
-func (t *typingPage) init() tea.Cmd {
+func (t *typingPage) init() {
 	//text := "test"
 	//text := "hello there how are you my friend?"
 	//text := "During the first part of your life, you only become aware of happiness once you have lost it. Then an age comes, a second one, in which you already know, at the moment when you begin to experience true happiness, that you are, at the end of the day, going to lose it. When I met Belle, I understood that I had just entered this second age. I also understood that I hadn't reached the third age, in which anticipation of the loss of happiness prevents you from living."
@@ -42,7 +30,7 @@ func (t *typingPage) init() tea.Cmd {
 	//text := "hey»\nthere"
 
 	quotes := []quote{}
-	if t.mode == timed {
+	if currentMode == Timed {
 		// fill up the buffer
 		for i := 0; i < quoteBufferSize; i++ {
 			quotes = append(quotes, getRandomQuote())
@@ -57,17 +45,14 @@ func (t *typingPage) init() tea.Cmd {
 	for _, quote := range quotes {
 		t.text.append(quote)
 	}
-
-	return nil
 }
 
+// pushWordHolder appends the letter to the word holder.
 func (t *typingPage) pushWordHolder(l string) {
-	if t.text.errorCount < t.text.remainingLettersCount() &&
-		t.text.errorCount < maxErrorOffset {
-		t.wordHolder += l
-	}
+	t.wordHolder += l
 }
 
+// popWordHolder removes the last letter from the word holder.
 func (t *typingPage) popWordHolder() string {
 	word := []rune(t.wordHolder)
 
@@ -80,14 +65,18 @@ func (t *typingPage) popWordHolder() string {
 	return ""
 }
 
+// clearWordHolder clears the word holder.
 func (t *typingPage) clearWordHolder() {
 	t.wordHolder = ""
 }
 
+// changeState sets the current state to the given value.
 func (t *typingPage) changeState(s State) {
 	t.currentState = s
 }
 
+// incrementKeysPressed increments the total number of keys pressed.
+// 'correct' param denotes whether the current key pressed is correct.
 func (t *typingPage) incrementKeysPressed(correct bool) {
 	t.totalKeysPressed++
 	if correct {
@@ -119,13 +108,13 @@ func (t *typingPage) update(msg tea.Msg) tea.Cmd {
 			return t.timer.tick()
 		}
 
-		if t.mode == timed && t.text.remainingLettersCount() < (textCountThreshold) {
+		if currentMode == Timed && t.text.remainingLettersCount() < (textCountThreshold) {
 			t.text.append(<-t.quoteFetcher.quotes)
 		}
 
 		// done typing the whole text
 		if t.text.isEndOfTextReached() {
-			return t.toResultPage()
+			t.toResultPage()
 		}
 
 	case TickMsg:
@@ -133,7 +122,7 @@ func (t *typingPage) update(msg tea.Msg) tea.Cmd {
 
 	case TimesUpMsg:
 		// time's up!
-		return t.toResultPage()
+		t.toResultPage()
 	}
 
 	return nil
@@ -146,9 +135,9 @@ func (t *typingPage) view() string {
 
 	t.viewBuilder.addTextarea(t.text.textLines, t.text.currentLineIndex, t.text.currentLetterIndex, t.text.errorCount)
 
-	if t.mode == timed {
+	if currentMode == Timed {
 		// show elapsed time as current progress
-		timeProgress := t.timer.getTimeElapsed().Seconds() / float64(countdown)
+		timeProgress := t.timer.getTimeElapsed().Seconds() / float64(Countdown)
 		t.viewBuilder.addProgressBar(timeProgress)
 		// make textarea scrolls (current line appears on top)
 		t.viewBuilder.setTextareaScroll(true)
@@ -161,28 +150,27 @@ func (t *typingPage) view() string {
 	return t.viewBuilder.render()
 }
 
-func (t *typingPage) toResultPage() tea.Cmd {
+// toResultPage initialises and transitions to result page.
+func (t *typingPage) toResultPage() {
 	t.quoteFetcher.stop()
 	resultPage := newResultPage(t.app, t.totalKeysPressed, t.correctKeysPressed, t.timer.getTimeElapsed())
 	t.app.changePage(resultPage)
-	return t.app.Init()
 }
 
+// newTypingPage initialises and returns a new instance of typingPage.
 func newTypingPage(app *app) *typingPage {
 	typingPage := &typingPage{app: app}
 	// initially at correct state
-	typingPage.currentState = &correctState{typingPage: typingPage}
-	typingPage.mode = timed //sprint
-
+	typingPage.currentState = newCorrectState(typingPage)
 	typingPage.text = newText()
 
-	if typingPage.mode == timed {
-		typingPage.timer = newCountDownTimer(countdown)
+	if currentMode == Timed {
+		typingPage.timer = newCountDownTimer(Countdown)
 	} else {
 		typingPage.timer = newCountUpTimer()
 	}
 
 	typingPage.quoteFetcher = newQuoteFetcher()
-	typingPage.viewBuilder = &typingPageViewBuilder{}
+	typingPage.viewBuilder = newViewBuilder()
 	return typingPage
 }

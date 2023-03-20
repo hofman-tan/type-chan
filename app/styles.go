@@ -1,4 +1,4 @@
-package main
+package app
 
 import "github.com/charmbracelet/lipgloss"
 
@@ -10,23 +10,26 @@ const white = lipgloss.Color("#ffffff")
 var containerStyle = lipgloss.NewStyle().
 	Padding(2, 2)
 
-var textAreaStyle = lipgloss.NewStyle().
+var borderStyle = lipgloss.NewStyle().
 	BorderStyle(lipgloss.RoundedBorder()).
 	Padding(1, 2)
 
-var greenTextAreaStyle = textAreaStyle.Copy().
+var greenBorderStyle = borderStyle.Copy().
 	BorderForeground(green)
 
-var redTextAreaStyle = textAreaStyle.Copy().
+var redBorderStyle = borderStyle.Copy().
 	BorderForeground(red)
 
-var pastTextStyle = lipgloss.NewStyle().
+var whiteTextStyle = lipgloss.NewStyle().
+	Foreground(white)
+
+var greyTextStyle = lipgloss.NewStyle().
 	Foreground(grey)
 
-var currentLetterStyle = lipgloss.NewStyle().
+var underlinedStyle = lipgloss.NewStyle().
 	Underline(true)
 
-var errorOffsetStyle = lipgloss.NewStyle().
+var redTextStyle = lipgloss.NewStyle().
 	Background(red)
 
 var wordHolderStyle = lipgloss.NewStyle().
@@ -34,12 +37,6 @@ var wordHolderStyle = lipgloss.NewStyle().
 	BorderForeground(white).
 	Padding(0, 1).
 	Width(30)
-
-var progressBarBlankStyle = lipgloss.NewStyle().
-	Foreground(grey)
-
-var progressBarContentStyle = lipgloss.NewStyle().
-	Foreground(white)
 
 var sidebarStyle = lipgloss.NewStyle().
 	BorderStyle(lipgloss.RoundedBorder()).
