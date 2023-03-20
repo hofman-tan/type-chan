@@ -21,12 +21,24 @@ classDiagram
       currentState
       changeState(State)
     }
+    class Text {
+    }
+    class TypingPageViewBuilder {
+      render()
+    }
     class ResultPage{
       app
     }
-    class Quote {
+    
+    class QuoteFetcher {
     }
+
     class Timer {
+      <<interface>>
+    }
+    class CountUpTimer {
+    }
+    class CountDownTimer {
     }
 
     class State {
@@ -35,7 +47,6 @@ classDiagram
       handleLetter(string)
       handleSpace()
       handleBackspace()
-      textareaView() string
     }
     class CorrectState {
       typingPage
@@ -48,12 +59,16 @@ classDiagram
     TypingPage --|> Page
     ResultPage --|> Page
     TypingPage <..> ResultPage : transitions to
+    TypingPage --> TypingPageViewBuilder
 
     TypingPage --> State
     CorrectState --|> State
     WrongState --|> State
     CorrectState <..> WrongState : transitions to
 
-    TypingPage ..> Quote
+    TypingPage --> Text
+    TypingPage ..> QuoteFetcher
     TypingPage --> Timer
+    CountUpTimer --|> Timer
+    CountDownTimer --|> Timer
 ```
