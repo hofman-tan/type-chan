@@ -2,7 +2,7 @@
 
 A TUI typing test powered by [Bubble Tea](https://github.com/charmbracelet/bubbletea) and [Lip Gloss](https://github.com/charmbracelet/lipgloss).
 
-Quotes/sentences for typing are retrieved from [quotable](https://github.com/lukePeavey/quotable)
+Random quotes and sentences are retrieved from [quotable](https://github.com/lukePeavey/quotable).
 
 ```shell
 # Fetch dependencies
@@ -16,20 +16,20 @@ go build .
 ```
 ---
 
-You can launch the test in 2 different modes:
+typechan comes in 2 different modes:
 
 ## Sprint mode 🏃🏻‍♀️
-Complete the sentence as fast as you can.
+Complete the test as fast as you can.
 ```shell
 ./typechan sprint
 ```
 
 ## Timed mode ⏱️
-Type as far as you can within the time limit.
+Type as much as you can within the time limit.
 ```shell
 # Starts a 5-minute test
 ./typechan timed
 
-# Specify a different time limit e.g. 30 seconds
+# Change the time limit to e.g. 30 seconds
 ./typechan timed -s 30
 ```
