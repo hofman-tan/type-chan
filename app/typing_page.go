@@ -20,6 +20,8 @@ type typingPage struct {
 	correctKeysPressed int
 
 	currentState State
+	correctState *correctState
+	wrongState   *wrongState
 }
 
 func (t *typingPage) init() {
@@ -160,8 +162,10 @@ func (t *typingPage) toResultPage() {
 // newTypingPage initialises and returns a new instance of typingPage.
 func newTypingPage(app *app) *typingPage {
 	typingPage := &typingPage{app: app}
+	typingPage.correctState = newCorrectState(typingPage)
+	typingPage.wrongState = newWrongState(typingPage)
 	// initially at correct state
-	typingPage.currentState = newCorrectState(typingPage)
+	typingPage.currentState = typingPage.correctState
 	typingPage.text = newText()
 
 	if currentMode == Timed {

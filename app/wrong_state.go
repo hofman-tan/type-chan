@@ -44,7 +44,7 @@ func (s *wrongState) handleBackspace() {
 	}
 
 	if !s.typingPage.text.hasError() {
-		s.typingPage.changeState(newCorrectState(s.typingPage))
+		s.typingPage.changeState(s.typingPage.correctState)
 	}
 }
 
