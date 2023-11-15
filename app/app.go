@@ -3,8 +3,14 @@ package app
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+)
+
+var (
+	windowWidth  int
+	initializing bool
 )
 
 // app represents the main typing test program.
@@ -18,11 +24,24 @@ func (a *app) Init() tea.Cmd {
 }
 
 func (a *app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if msg, ok := msg.(tea.WindowSizeMsg); ok {
+		windowWidth = msg.Width
+		initializing = false
+	}
+	if a.currentPage == nil {
+		return a, nil
+	}
 	return a, a.currentPage.update(msg)
 }
 
 func (a *app) View() string {
-	return containerStyle.Render(a.currentPage.view())
+	if initializing {
+		return "Initializing..."
+	}
+
+	return strings.Repeat("\n", paddingY) +
+		a.currentPage.view() +
+		strings.Repeat("\n", paddingY)
 }
 
 // changePage sets the current page to the given value.
@@ -39,6 +58,7 @@ func New() *app {
 // Start launches the program with the given mode.
 func (a *app) Start(m Mode) {
 	currentMode = m
+	initializing = true
 
 	// switch to typing page
 	a.changePage(newTypingPage(a))

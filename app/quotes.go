@@ -5,9 +5,6 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"strings"
-
-	"github.com/muesli/reflow/wordwrap"
 )
 
 //https://api.quotable.io/random?minLength=200
@@ -56,8 +53,6 @@ func newQuoteFetcher() *quoteFetcher {
 // quote stores the quote data.
 type quote struct {
 	Text   string `json:"content"`
-	lines  []string
-	words  []string
 	length int
 }
 
@@ -73,7 +68,7 @@ func getRandomQuote() quote {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		panic("Error fetching random quote from API")
+		panic("Error querying random quote")
 	}
 
 	body, err := io.ReadAll(resp.Body)
@@ -88,8 +83,6 @@ func getRandomQuote() quote {
 	}
 
 	quote.Text = processText(quote.Text)
-	quote.lines = splitTextIntoLines(quote.Text, textareaWidth)
-	quote.words = strings.Split(quote.Text, " ")
 	quote.length = len(quote.Text)
 
 	return quote
@@ -124,18 +117,3 @@ var unicodeSubstitute = map[rune]rune{
 // isASCII checks if the given rune falls under the ASCII charset.
 // taken from: https://github.com/scott-ainsworth/go-ascii/blob/e2eb5175fb10/ascii.go#L103
 func isASCII(c rune) bool { return c <= 0x7F }
-
-// splitTextIntoLines splits the given text string into slices of strings,
-// while perserving any trailing spaces. The length of strings are bounded
-// by the specified limit.
-func splitTextIntoLines(text string, limit int) []string {
-	if len(text) == 0 {
-		return []string{}
-	}
-
-	// minus 1 from the limit to offset the space before adding it later on.
-	wrapped := wordwrap.String(text, limit-1)
-	wrapped = strings.ReplaceAll(wrapped, "\n", " \n")
-	textSlices := strings.Split(wrapped, "\n")
-	return textSlices
-}

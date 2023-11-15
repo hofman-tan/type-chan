@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/charmbracelet/bubbles/progress"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -11,13 +12,14 @@ type typingPage struct {
 	timer        Timer
 	text         *text
 	quoteFetcher *quoteFetcher
-	viewBuilder  *typingPageViewBuilder
 
-	wordHolder string
+	wordHolder *wordHolder
 	started    bool
 
 	totalKeysPressed   int
 	correctKeysPressed int
+
+	progressBar *progressBar
 
 	currentState State
 	correctState *correctState
@@ -51,25 +53,17 @@ func (t *typingPage) init() {
 
 // pushWordHolder appends the letter to the word holder.
 func (t *typingPage) pushWordHolder(l string) {
-	t.wordHolder += l
+	t.wordHolder.add(l)
 }
 
 // popWordHolder removes the last letter from the word holder.
 func (t *typingPage) popWordHolder() string {
-	word := []rune(t.wordHolder)
-
-	if len(word) > 0 {
-		lastLetter := word[len(word)-1]
-		word = word[:len(word)-1] // remove the last letter
-		t.wordHolder = string(word)
-		return string(lastLetter)
-	}
-	return ""
+	return t.wordHolder.pop()
 }
 
 // clearWordHolder clears the word holder.
 func (t *typingPage) clearWordHolder() {
-	t.wordHolder = ""
+	t.wordHolder.clear()
 }
 
 // changeState sets the current state to the given value.
@@ -87,30 +81,33 @@ func (t *typingPage) incrementKeysPressed(correct bool) {
 }
 
 func (t *typingPage) update(msg tea.Msg) tea.Cmd {
+	cmds := []tea.Cmd{}
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 
-		if msg.Type == tea.KeyEsc || msg.Type == tea.KeyCtrlC {
+		switch msg.Type {
+		case tea.KeyEsc, tea.KeyCtrlC:
 			// exit
 			return tea.Quit
-		} else if msg.Type == tea.KeyBackspace {
+		case tea.KeyBackspace:
 			t.currentState.handleBackspace()
-		} else if msg.Type == tea.KeySpace {
+		case tea.KeySpace:
 			t.currentState.handleSpace()
-		} else if msg.Type == tea.KeyEnter {
+		case tea.KeyEnter:
 			t.currentState.handleEnter()
-		} else if msg.Type == tea.KeyTab || msg.Type == tea.KeyUp || msg.Type == tea.KeyDown || msg.Type == tea.KeyLeft || msg.Type == tea.KeyRight {
+		case tea.KeyTab, tea.KeyUp, tea.KeyDown, tea.KeyLeft, tea.KeyRight:
 			// do nothing
-		} else {
+		default:
 			t.currentState.handleLetter(msg.String())
 		}
 
 		if !t.started {
 			t.started = true
-			return t.timer.tick()
+			cmds = append(cmds, t.timer.tick())
 		}
 
-		if currentMode == Timed && t.text.remainingLettersCount() < (textCountThreshold) {
+		if currentMode == Timed && len(t.text.lines) < scrollWindowHeight {
 			t.text.append(<-t.quoteFetcher.quotes)
 		}
 
@@ -119,15 +116,33 @@ func (t *typingPage) update(msg tea.Msg) tea.Cmd {
 			t.toResultPage()
 		}
 
-	case TickMsg:
-		return t.timer.tick()
+		if currentMode == Timed {
+			// show elapsed time as current progress
+			timeProgress := t.timer.getTimeElapsed().Seconds() / float64(Countdown)
+			cmds = append(cmds, t.progressBar.SetPercent(timeProgress))
+		} else {
+			cmds = append(cmds, t.progressBar.SetPercent(t.text.currentProgress()))
+		}
 
+	case TickMsg:
+		cmds = append(cmds, t.timer.tick())
+
+	// Time's up!
 	case TimesUpMsg:
-		// time's up!
 		t.toResultPage()
+
+	// Terminal window is resized
+	case tea.WindowSizeMsg:
+		t.text.resize()
+
+	// FrameMsg is sent when the progress bar wants to animate itself
+	case progress.FrameMsg:
+		progressModel, cmd := t.progressBar.Update(msg)
+		t.progressBar.Model = progressModel.(progress.Model)
+		cmds = append(cmds, cmd)
 	}
 
-	return nil
+	return tea.Batch(cmds...)
 }
 
 func (t *typingPage) view() string {
@@ -135,21 +150,9 @@ func (t *typingPage) view() string {
 		return ""
 	}
 
-	t.viewBuilder.addTextarea(t.text.textLines, t.text.currentLineIndex, t.text.currentLetterIndex, t.text.errorCount)
-
-	if currentMode == Timed {
-		// show elapsed time as current progress
-		timeProgress := t.timer.getTimeElapsed().Seconds() / float64(Countdown)
-		t.viewBuilder.addProgressBar(timeProgress)
-		// make textarea scrolls (current line appears on top)
-		t.viewBuilder.setTextareaScroll(true)
-	} else {
-		t.viewBuilder.addProgressBar(t.text.currentProgress())
-	}
-
-	t.viewBuilder.addSidebar(t.started, t.timer.string())
-	t.viewBuilder.addWordHolder(t.wordHolder)
-	return t.viewBuilder.render()
+	return t.progressBar.View() + "\n\n" +
+		t.text.View() + "\n\n" +
+		t.wordHolder.View()
 }
 
 // toResultPage initialises and transitions to result page.
@@ -167,14 +170,17 @@ func newTypingPage(app *app) *typingPage {
 	// initially at correct state
 	typingPage.currentState = typingPage.correctState
 	typingPage.text = newText()
+	typingPage.progressBar = newProgressBar()
+	typingPage.wordHolder = newWordHolder()
 
 	if currentMode == Timed {
+		typingPage.text.scroll = true
 		typingPage.timer = newCountDownTimer(Countdown)
 	} else {
+		typingPage.text.scroll = false
 		typingPage.timer = newCountUpTimer()
 	}
 
 	typingPage.quoteFetcher = newQuoteFetcher()
-	typingPage.viewBuilder = newViewBuilder()
 	return typingPage
 }

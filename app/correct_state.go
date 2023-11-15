@@ -33,7 +33,6 @@ func (s *correctState) handleSpace() {
 		// clear word holder
 		s.typingPage.clearWordHolder()
 		// update textarea
-		s.typingPage.text.nextWord()
 		s.typingPage.text.nextLetter()
 
 	} else {
@@ -63,7 +62,6 @@ func (s *correctState) handleEnter() { // update word holder
 		// clear word holder
 		s.typingPage.clearWordHolder()
 		// update textarea
-		s.typingPage.text.nextWord()
 		s.typingPage.text.nextLetter()
 
 	} else {

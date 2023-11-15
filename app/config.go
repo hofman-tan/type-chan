@@ -1,5 +1,6 @@
 package app
 
+// TODO: move under app.go
 // Mode is the user setting that determines the type of typing test.
 type Mode int
 
