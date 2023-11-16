@@ -1,5 +1,7 @@
 package app
 
+import "time"
+
 // TODO: move under app.go
 // Mode is the user setting that determines the type of typing test.
 type Mode int
@@ -13,4 +15,4 @@ const (
 var currentMode Mode
 
 // Countdown is the time limit (in seconds) for Timed mode.
-var Countdown = 5 * 60
+var Countdown time.Duration = time.Second * 5 * 60

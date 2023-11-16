@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -55,10 +56,9 @@ func (r *resultPage) view() string {
 	statStr += fmt.Sprintf("Total keys pressed: %d\n", r.totalKeysPressed)
 	statStr += fmt.Sprintf("Correct keys: %d", r.correctKeysPressed)
 
-	str := lipgloss.NewStyle().Padding(paddingY, paddingX).Render(statStr)
-	str += "\npress enter to start new game"
-	str += "\npress esc or ctrl+c to quit\n"
-	return str
+	return lipgloss.NewStyle().PaddingLeft(paddingX).Render(statStr) + "\n\n" +
+		strings.Repeat(" ", paddingX) + lipgloss.NewStyle().Foreground(grey).Render("enter to restart") + "\n" +
+		strings.Repeat(" ", paddingX) + lipgloss.NewStyle().Foreground(grey).Render("esc or ctrl+c to quit")
 }
 
 // newResultPage initialises and returns a new instance of resultPage.

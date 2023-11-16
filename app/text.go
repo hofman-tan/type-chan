@@ -2,6 +2,8 @@ package app
 
 import (
 	"strings"
+
+	"github.com/charmbracelet/lipgloss"
 )
 
 // text is the model for textarea content, and all relevant position indices.
@@ -140,18 +142,18 @@ func (t *text) View() string {
 			if lineIndex < t.currentLineIndex ||
 				(lineIndex == t.currentLineIndex && letterIndex < t.currentLetterIndex) {
 				// typed letters
-				letterStr = greyTextStyle.Render(letterStr)
+				letterStr = lipgloss.NewStyle().Foreground(grey).Render(letterStr)
 			}
 
 			if lineIndex == t.currentLineIndex && letterIndex == t.currentLetterIndex {
 				// current (untyped) letter
-				letterStr = underlinedStyle.Render(letterStr)
+				letterStr = lipgloss.NewStyle().Underline(true).Render(letterStr)
 				errorsToRender = t.errorCount
 			}
 
 			if errorsToRender > 0 {
 				// mistyped letters
-				letterStr = redTextStyle.Render(letterStr)
+				letterStr = lipgloss.NewStyle().Background(red).Render(letterStr)
 				errorsToRender--
 			}
 

@@ -25,7 +25,11 @@ func (a *app) Init() tea.Cmd {
 
 func (a *app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if msg, ok := msg.(tea.WindowSizeMsg); ok {
-		windowWidth = msg.Width
+		if msg.Width < minWindowWidth {
+			windowWidth = minWindowWidth
+		} else {
+			windowWidth = msg.Width
+		}
 		initializing = false
 	}
 	if a.currentPage == nil {

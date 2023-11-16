@@ -1,25 +1,31 @@
 package app
 
 import (
+	"strings"
+	"time"
+
 	"github.com/charmbracelet/bubbles/progress"
+	"github.com/charmbracelet/bubbles/timer"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 // typingPage is the page model for the typing test program.
 type typingPage struct {
 	app *app
 
-	timer        Timer
 	text         *text
 	quoteFetcher *quoteFetcher
 
-	wordHolder *wordHolder
+	wordHolder string
 	started    bool
 
 	totalKeysPressed   int
 	correctKeysPressed int
 
-	progressBar *progressBar
+	progressBar progress.Model
+	stopWatch   stopWatch
+	timer       timer.Model
 
 	currentState State
 	correctState *correctState
@@ -34,16 +40,16 @@ func (t *typingPage) init() {
 	//text := "hey»\nthere"
 
 	quotes := []quote{}
-	if currentMode == Timed {
+	switch currentMode {
+	case Sprint:
+		quotes = append(quotes, getRandomQuote())
+	case Timed:
 		// fill up the buffer
 		for i := 0; i < quoteBufferSize; i++ {
 			quotes = append(quotes, getRandomQuote())
 		}
-		// begin endless fetching
+		// begin continuous querying
 		t.quoteFetcher.start(quoteBufferSize)
-
-	} else {
-		quotes = append(quotes, getRandomQuote())
 	}
 
 	for _, quote := range quotes {
@@ -53,17 +59,24 @@ func (t *typingPage) init() {
 
 // pushWordHolder appends the letter to the word holder.
 func (t *typingPage) pushWordHolder(l string) {
-	t.wordHolder.add(l)
+	t.wordHolder += l
 }
 
 // popWordHolder removes the last letter from the word holder.
 func (t *typingPage) popWordHolder() string {
-	return t.wordHolder.pop()
+	word := []rune(t.wordHolder)
+	if len(word) == 0 {
+		return ""
+	}
+	lastLetter := word[len(word)-1]
+	word = word[:len(word)-1] // remove the last letter
+	t.wordHolder = string(word)
+	return string(lastLetter)
 }
 
 // clearWordHolder clears the word holder.
 func (t *typingPage) clearWordHolder() {
-	t.wordHolder.clear()
+	t.wordHolder = ""
 }
 
 // changeState sets the current state to the given value.
@@ -104,41 +117,39 @@ func (t *typingPage) update(msg tea.Msg) tea.Cmd {
 
 		if !t.started {
 			t.started = true
-			cmds = append(cmds, t.timer.tick())
+			if currentMode == Sprint {
+				cmds = append(cmds, t.stopWatch.start())
+			}
+			if currentMode == Timed {
+				cmds = append(cmds, t.timer.Start())
+			}
 		}
 
 		if currentMode == Timed && len(t.text.lines) < scrollWindowHeight {
 			t.text.append(<-t.quoteFetcher.quotes)
 		}
 
-		// done typing the whole text
 		if t.text.isEndOfTextReached() {
 			t.toResultPage()
 		}
 
-		if currentMode == Timed {
-			// show elapsed time as current progress
-			timeProgress := t.timer.getTimeElapsed().Seconds() / float64(Countdown)
-			cmds = append(cmds, t.progressBar.SetPercent(timeProgress))
-		} else {
-			cmds = append(cmds, t.progressBar.SetPercent(t.text.currentProgress()))
-		}
-
 	case TickMsg:
-		cmds = append(cmds, t.timer.tick())
+		cmds = append(cmds, t.stopWatch.tick())
 
 	// Time's up!
-	case TimesUpMsg:
+	case timer.TimeoutMsg:
 		t.toResultPage()
 
 	// Terminal window is resized
 	case tea.WindowSizeMsg:
+		t.progressBar.Width = windowWidth - paddingX*2
 		t.text.resize()
 
-	// FrameMsg is sent when the progress bar wants to animate itself
-	case progress.FrameMsg:
-		progressModel, cmd := t.progressBar.Update(msg)
-		t.progressBar.Model = progressModel.(progress.Model)
+	}
+
+	if currentMode == Timed {
+		var cmd tea.Cmd
+		t.timer, cmd = t.timer.Update(msg)
 		cmds = append(cmds, cmd)
 	}
 
@@ -150,37 +161,67 @@ func (t *typingPage) view() string {
 		return ""
 	}
 
-	return t.progressBar.View() + "\n\n" +
+	appWidth := windowWidth - paddingX*2
+
+	var progressPercent float64
+	switch currentMode {
+	case Sprint:
+		progressPercent = t.text.currentProgress()
+	case Timed:
+		progressPercent = float64(Countdown-t.timer.Timeout) / float64(Countdown)
+	}
+
+	progressBar := t.progressBar.ViewAs(progressPercent)
+	wordHolder := "> " + t.wordHolder
+	wordHolder = lipgloss.NewStyle().Width(appWidth / 2).Align(lipgloss.Left).Render(wordHolder)
+
+	var timeStr string
+	if currentMode == Sprint {
+		timeStr = t.stopWatch.view()
+	} else {
+		timeStr = t.timer.View()
+	}
+	timeStr = lipgloss.NewStyle().Width(appWidth / 2).Align(lipgloss.Right).Render(timeStr)
+
+	return strings.Repeat(" ", paddingX) + progressBar + "\n\n" +
 		t.text.View() + "\n\n" +
-		t.wordHolder.View()
+		strings.Repeat(" ", paddingX) + lipgloss.JoinHorizontal(lipgloss.Top, wordHolder, timeStr) + "\n" +
+		strings.Repeat(" ", paddingX) + lipgloss.NewStyle().Foreground(grey).Render("esc or ctrl+c to quit")
+
 }
 
 // toResultPage initialises and transitions to result page.
 func (t *typingPage) toResultPage() {
 	t.quoteFetcher.stop()
-	resultPage := newResultPage(t.app, t.totalKeysPressed, t.correctKeysPressed, t.timer.getTimeElapsed())
+
+	var elapsed time.Duration
+	if currentMode == Sprint {
+		elapsed = t.stopWatch.elapsed()
+	} else {
+		elapsed = Countdown
+	}
+	resultPage := newResultPage(t.app, t.totalKeysPressed, t.correctKeysPressed, elapsed)
 	t.app.changePage(resultPage)
 }
 
 // newTypingPage initialises and returns a new instance of typingPage.
 func newTypingPage(app *app) *typingPage {
-	typingPage := &typingPage{app: app}
-	typingPage.correctState = newCorrectState(typingPage)
-	typingPage.wrongState = newWrongState(typingPage)
-	// initially at correct state
-	typingPage.currentState = typingPage.correctState
-	typingPage.text = newText()
-	typingPage.progressBar = newProgressBar()
-	typingPage.wordHolder = newWordHolder()
+	t := &typingPage{app: app}
+	t.correctState = newCorrectState(t)
+	t.wrongState = newWrongState(t)
+	t.currentState = t.correctState // initially at correct state
 
-	if currentMode == Timed {
-		typingPage.text.scroll = true
-		typingPage.timer = newCountDownTimer(Countdown)
-	} else {
-		typingPage.text.scroll = false
-		typingPage.timer = newCountUpTimer()
+	t.text = newText()
+	t.progressBar = progress.New(progress.WithSolidFill(string(green)), progress.WithWidth(windowWidth-paddingX*2), progress.WithoutPercentage())
+
+	switch currentMode {
+	case Sprint:
+		t.stopWatch = newStopwatch()
+	case Timed:
+		t.text.scroll = true
+		t.timer = timer.NewWithInterval(Countdown, time.Second)
 	}
 
-	typingPage.quoteFetcher = newQuoteFetcher()
-	return typingPage
+	t.quoteFetcher = newQuoteFetcher()
+	return t
 }

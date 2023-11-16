@@ -24,6 +24,6 @@ var timedCmd = &cobra.Command{
 }
 
 func init() {
-	timedCmd.PersistentFlags().IntVarP(&app.Countdown, "seconds", "s", app.Countdown, "Timer countdown in seconds")
+	timedCmd.PersistentFlags().DurationVarP(&app.Countdown, "seconds", "s", app.Countdown, "Timer timeout e.g. 30s, 5m")
 	rootCmd.AddCommand(timedCmd)
 }
