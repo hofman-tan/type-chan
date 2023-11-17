@@ -2,15 +2,6 @@ package app
 
 import "time"
 
-// TODO: move under app.go
-// Mode is the user setting that determines the type of typing test.
-type Mode int
-
-const (
-	Sprint Mode = iota
-	Timed
-)
-
 // currentMode keeps track of the current mode setting.
 var currentMode Mode
 

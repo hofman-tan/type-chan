@@ -8,16 +8,16 @@ import (
 
 // text is the model for textarea content, and all relevant position indices.
 type text struct {
-	lines  []string
-	length int
-	typed  int
-	// make textarea scroll (current line appears on top)
-	scroll bool
+	lines       []string
+	totalLength int
+	totalTyped  int
+
+	scroll bool // make textarea scroll (current line appears on top)
 
 	currentLineIndex     int // index position of current line of text
 	currentLetterIndex   int // index position of letter, counted from the start of current line
 	letterIndexFromStart int // index position of letter, counted from the start of text
-	errorCount           int // number of wrongly-typed letters, counted from the current letter index
+	mistypedCount        int // number of wrongly-typed letters, counted from the current letter index
 }
 
 // newText initialises and returns a new instance of text.
@@ -32,12 +32,12 @@ func (t *text) append(q quote) {
 	// adds a newline character to the end of text
 	if len(t.lines) != 0 {
 		t.lines[len(t.lines)-1] += "\n"
-		t.length++
+		t.totalLength++
 	}
 
 	quoteLines := splitTextIntoLines(q.Text)
 	t.lines = append(t.lines, quoteLines...)
-	t.length += q.length
+	t.totalLength += q.length
 }
 
 // currentLine returns the current line of text where the cursor lies.
@@ -61,7 +61,7 @@ func (t *text) nextLetter() {
 		}
 		t.currentLetterIndex = 0
 	}
-	t.typed++
+	t.totalTyped++
 }
 
 // previousLetter moves the cursor to the previous letter.
@@ -72,40 +72,40 @@ func (t *text) previousLetter() {
 	}
 	t.currentLetterIndex--
 	t.letterIndexFromStart--
-	t.typed--
+	t.totalTyped--
 }
 
-// incrementErrorCount increments the number of errors made.
-func (t *text) incrementErrorCount() {
-	t.errorCount++
+// incrementMistypedCount increments the number of mistypes made.
+func (t *text) incrementMistypedCount() {
+	t.mistypedCount++
 }
 
-// decrementErrorCount decrements the number of errors made.
-func (t *text) decrementErrorCount() {
-	if t.hasError() {
-		t.errorCount--
+// decrementMistypedCount decrements the number of mistypes made.
+func (t *text) decrementMistypedCount() {
+	if t.anyMistyped() {
+		t.mistypedCount--
 	}
 }
 
-// notErrorCountLimitReached tells if error count can still be incremented further.
-func (t *text) notErrorCountLimitReached() bool {
-	return t.errorCount < t.remainingLettersCount() && t.errorCount < maxErrorCount
+// canIncrementMistyped tells if mistyped count can still be incremented further.
+func (t *text) canIncrementMistyped() bool {
+	return t.mistypedCount < t.remainingLettersCount() && t.mistypedCount < maxMistypedCount
 }
 
-// hasError tells if there's any errors made.
-func (t *text) hasError() bool {
-	return t.errorCount > 0
+// anyMistyped tells if there's any mistypes made.
+func (t *text) anyMistyped() bool {
+	return t.mistypedCount > 0
 }
 
 // remainingLetterCount returns the number of letters left to type,
 // excluding the current letter.
 func (t *text) remainingLettersCount() int {
-	return t.length - t.typed
+	return t.totalLength - t.totalTyped
 }
 
-// isEndOfTextReached tells if the cursor has moved beyond the whole text,
+// hasReachedEndOfText tells if the cursor has moved beyond the whole text,
 // denoting the completion of the typing test.
-func (t *text) isEndOfTextReached() bool {
+func (t *text) hasReachedEndOfText() bool {
 	return t.remainingLettersCount() <= 0
 }
 
@@ -117,17 +117,17 @@ func (t *text) currentLetter() string {
 // currentProgress returns the current progress of typing.
 // The returned value ranges from 0 (just started) to 1 (completed).
 func (t *text) currentProgress() float64 {
-	return float64(t.typed) / float64(t.length)
+	return float64(t.totalTyped) / float64(t.totalLength)
 }
 
 func (t *text) View() string {
 	result := ""
-	errorsToRender := 0
+	MistypesToRender := 0
 	lineIndex := 0
 
 	for lineIndex < len(t.lines) {
 		// ignore lines that are not visible in scroll mode
-		if t.scroll && lineIndex >= scrollWindowHeight {
+		if t.scroll && lineIndex >= scrollTextHeight {
 			break
 		}
 
@@ -148,13 +148,13 @@ func (t *text) View() string {
 			if lineIndex == t.currentLineIndex && letterIndex == t.currentLetterIndex {
 				// current (untyped) letter
 				letterStr = lipgloss.NewStyle().Underline(true).Render(letterStr)
-				errorsToRender = t.errorCount
+				MistypesToRender = t.mistypedCount
 			}
 
-			if errorsToRender > 0 {
+			if MistypesToRender > 0 {
 				// mistyped letters
 				letterStr = lipgloss.NewStyle().Background(red).Render(letterStr)
-				errorsToRender--
+				MistypesToRender--
 			}
 
 			// no styling applied for untyped letters that come after current letter

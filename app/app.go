@@ -10,6 +10,7 @@ import (
 
 var (
 	windowWidth  int
+	appWidth     int
 	initializing bool
 )
 
@@ -30,6 +31,7 @@ func (a *app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			windowWidth = msg.Width
 		}
+		appWidth = windowWidth - paddingX*2
 		initializing = false
 	}
 	if a.currentPage == nil {

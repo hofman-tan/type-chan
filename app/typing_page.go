@@ -17,8 +17,8 @@ type typingPage struct {
 	text         *text
 	quoteFetcher *quoteFetcher
 
-	wordHolder string
-	started    bool
+	wordInput string
+	started   bool
 
 	totalKeysPressed   int
 	correctKeysPressed int
@@ -33,12 +33,6 @@ type typingPage struct {
 }
 
 func (t *typingPage) init() {
-	//text := "test"
-	//text := "hello there how are you my friend?"
-	//text := "During the first part of your life, you only become aware of happiness once you have lost it. Then an age comes, a second one, in which you already know, at the moment when you begin to experience true happiness, that you are, at the end of the day, going to lose it. When I met Belle, I understood that I had just entered this second age. I also understood that I hadn't reached the third age, in which anticipation of the loss of happiness prevents you from living."
-	//text := "‘Margareta! I’m surprised at you! We both know there’s no such thing as love!’"
-	//text := "hey»\nthere"
-
 	quotes := []quote{}
 	switch currentMode {
 	case Sprint:
@@ -57,26 +51,26 @@ func (t *typingPage) init() {
 	}
 }
 
-// pushWordHolder appends the letter to the word holder.
-func (t *typingPage) pushWordHolder(l string) {
-	t.wordHolder += l
+// pushWordInput appends the letter to the word input.
+func (t *typingPage) pushWordInput(l string) {
+	t.wordInput += l
 }
 
-// popWordHolder removes the last letter from the word holder.
-func (t *typingPage) popWordHolder() string {
-	word := []rune(t.wordHolder)
+// popWordInput removes the last letter from the word input.
+func (t *typingPage) popWordInput() string {
+	word := []rune(t.wordInput)
 	if len(word) == 0 {
 		return ""
 	}
 	lastLetter := word[len(word)-1]
 	word = word[:len(word)-1] // remove the last letter
-	t.wordHolder = string(word)
+	t.wordInput = string(word)
 	return string(lastLetter)
 }
 
-// clearWordHolder clears the word holder.
-func (t *typingPage) clearWordHolder() {
-	t.wordHolder = ""
+// clearWordInput clears the word input.
+func (t *typingPage) clearWordInput() {
+	t.wordInput = ""
 }
 
 // changeState sets the current state to the given value.
@@ -98,7 +92,6 @@ func (t *typingPage) update(msg tea.Msg) tea.Cmd {
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-
 		switch msg.Type {
 		case tea.KeyEsc, tea.KeyCtrlC:
 			// exit
@@ -125,11 +118,11 @@ func (t *typingPage) update(msg tea.Msg) tea.Cmd {
 			}
 		}
 
-		if currentMode == Timed && len(t.text.lines) < scrollWindowHeight {
+		if currentMode == Timed && len(t.text.lines) < scrollTextHeight {
 			t.text.append(<-t.quoteFetcher.quotes)
 		}
 
-		if t.text.isEndOfTextReached() {
+		if t.text.hasReachedEndOfText() {
 			t.toResultPage()
 		}
 
@@ -142,7 +135,7 @@ func (t *typingPage) update(msg tea.Msg) tea.Cmd {
 
 	// Terminal window is resized
 	case tea.WindowSizeMsg:
-		t.progressBar.Width = windowWidth - paddingX*2
+		t.progressBar.Width = appWidth
 		t.text.resize()
 
 	}
@@ -157,12 +150,6 @@ func (t *typingPage) update(msg tea.Msg) tea.Cmd {
 }
 
 func (t *typingPage) view() string {
-	if t.text.isEndOfTextReached() {
-		return ""
-	}
-
-	appWidth := windowWidth - paddingX*2
-
 	var progressPercent float64
 	switch currentMode {
 	case Sprint:
@@ -170,10 +157,15 @@ func (t *typingPage) view() string {
 	case Timed:
 		progressPercent = float64(Countdown-t.timer.Timeout) / float64(Countdown)
 	}
+	if t.text.anyMistyped() {
+		t.progressBar.FullColor = string(red)
+	} else {
+		t.progressBar.FullColor = string(green)
+	}
 
 	progressBar := t.progressBar.ViewAs(progressPercent)
-	wordHolder := "> " + t.wordHolder
-	wordHolder = lipgloss.NewStyle().Width(appWidth / 2).Align(lipgloss.Left).Render(wordHolder)
+	wordInput := "> " + t.wordInput
+	wordInput = lipgloss.NewStyle().Width(appWidth / 2).Align(lipgloss.Left).Render(wordInput)
 
 	var timeStr string
 	if currentMode == Sprint {
@@ -185,7 +177,7 @@ func (t *typingPage) view() string {
 
 	return strings.Repeat(" ", paddingX) + progressBar + "\n\n" +
 		t.text.View() + "\n\n" +
-		strings.Repeat(" ", paddingX) + lipgloss.JoinHorizontal(lipgloss.Top, wordHolder, timeStr) + "\n" +
+		strings.Repeat(" ", paddingX) + lipgloss.JoinHorizontal(lipgloss.Top, wordInput, timeStr) + "\n" +
 		strings.Repeat(" ", paddingX) + lipgloss.NewStyle().Foreground(grey).Render("esc or ctrl+c to quit")
 
 }
@@ -212,7 +204,7 @@ func newTypingPage(app *app) *typingPage {
 	t.currentState = t.correctState // initially at correct state
 
 	t.text = newText()
-	t.progressBar = progress.New(progress.WithSolidFill(string(green)), progress.WithWidth(windowWidth-paddingX*2), progress.WithoutPercentage())
+	t.progressBar = progress.New(progress.WithWidth(windowWidth-paddingX*2), progress.WithoutPercentage())
 
 	switch currentMode {
 	case Sprint:
