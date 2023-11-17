@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"strings"
 	"time"
 
@@ -32,15 +33,24 @@ type typingPage struct {
 	wrongState   *wrongState
 }
 
-func (t *typingPage) init() {
+func (t *typingPage) init() error {
 	quotes := []quote{}
 	switch currentMode {
 	case Sprint:
-		quotes = append(quotes, getRandomQuote())
+		q, err := getRandomQuote()
+		if err != nil {
+			return err
+		}
+		quotes = append(quotes, q)
+
 	case Timed:
 		// fill up the buffer
 		for i := 0; i < quoteBufferSize; i++ {
-			quotes = append(quotes, getRandomQuote())
+			q, err := getRandomQuote()
+			if err != nil {
+				return err
+			}
+			quotes = append(quotes, q)
 		}
 		// begin continuous querying
 		t.quoteFetcher.start(quoteBufferSize)
@@ -49,6 +59,7 @@ func (t *typingPage) init() {
 	for _, quote := range quotes {
 		t.text.append(quote)
 	}
+	return nil
 }
 
 // pushWordInput appends the letter to the word input.
@@ -87,7 +98,7 @@ func (t *typingPage) incrementKeysPressed(correct bool) {
 	}
 }
 
-func (t *typingPage) update(msg tea.Msg) tea.Cmd {
+func (t *typingPage) update(msg tea.Msg) (tea.Cmd, error) {
 	cmds := []tea.Cmd{}
 
 	switch msg := msg.(type) {
@@ -95,7 +106,7 @@ func (t *typingPage) update(msg tea.Msg) tea.Cmd {
 		switch msg.Type {
 		case tea.KeyEsc, tea.KeyCtrlC:
 			// exit
-			return tea.Quit
+			return tea.Quit, nil
 		case tea.KeyBackspace:
 			t.currentState.handleBackspace()
 		case tea.KeySpace:
@@ -146,7 +157,7 @@ func (t *typingPage) update(msg tea.Msg) tea.Cmd {
 		cmds = append(cmds, cmd)
 	}
 
-	return tea.Batch(cmds...)
+	return tea.Batch(cmds...), nil
 }
 
 func (t *typingPage) view() string {
@@ -155,7 +166,7 @@ func (t *typingPage) view() string {
 	case Sprint:
 		progressPercent = t.text.currentProgress()
 	case Timed:
-		progressPercent = float64(Countdown-t.timer.Timeout) / float64(Countdown)
+		progressPercent = float64(Timeout-t.timer.Timeout) / float64(Timeout)
 	}
 	if t.text.anyMistyped() {
 		t.progressBar.FullColor = string(red)
@@ -183,17 +194,17 @@ func (t *typingPage) view() string {
 }
 
 // toResultPage initialises and transitions to result page.
-func (t *typingPage) toResultPage() {
+func (t *typingPage) toResultPage() error {
 	t.quoteFetcher.stop()
 
 	var elapsed time.Duration
 	if currentMode == Sprint {
 		elapsed = t.stopWatch.elapsed()
 	} else {
-		elapsed = Countdown
+		elapsed = Timeout
 	}
 	resultPage := newResultPage(t.app, t.totalKeysPressed, t.correctKeysPressed, elapsed)
-	t.app.changePage(resultPage)
+	return t.app.changePage(resultPage)
 }
 
 // newTypingPage initialises and returns a new instance of typingPage.
@@ -211,9 +222,9 @@ func newTypingPage(app *app) *typingPage {
 		t.stopWatch = newStopwatch()
 	case Timed:
 		t.text.scroll = true
-		t.timer = timer.NewWithInterval(Countdown, time.Second)
+		t.timer = timer.NewWithInterval(Timeout, time.Second)
 	}
 
-	t.quoteFetcher = newQuoteFetcher()
+	t.quoteFetcher = newQuoteFetcher(context.Background())
 	return t
 }

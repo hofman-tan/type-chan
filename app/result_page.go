@@ -23,26 +23,26 @@ type resultPage struct {
 	cpm         float64
 }
 
-func (r *resultPage) init() {
+func (r *resultPage) init() error {
 	// https://support.sunburst.com/hc/en-us/articles/229335208-Type-to-Learn-How-are-Words-Per-Minute-and-Accuracy-Calculated-
 	r.grossWPM = (float64(r.totalKeysPressed) / 5) / r.elapsedTime.Minutes()
 	r.accuracy = (float64(r.correctKeysPressed) / float64(r.totalKeysPressed)) // range 0 to 1
 	r.adjustedWPM = r.grossWPM * r.accuracy
 	r.cpm = float64(r.totalKeysPressed) / r.elapsedTime.Minutes()
+	return nil
 }
 
-func (r *resultPage) update(msg tea.Msg) tea.Cmd {
+func (r *resultPage) update(msg tea.Msg) (tea.Cmd, error) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		if msg.Type == tea.KeyEsc || msg.Type == tea.KeyCtrlC {
 			// exit
-			return tea.Quit
+			return tea.Quit, nil
 		} else if msg.Type == tea.KeyEnter {
-			// switch to typing page
-			r.app.changePage(newTypingPage(r.app))
+			return nil, r.app.changePage(newTypingPage(r.app))
 		}
 	}
-	return nil
+	return nil, nil
 }
 
 func (r *resultPage) view() string {
