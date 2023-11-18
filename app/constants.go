@@ -3,7 +3,7 @@ package app
 import "github.com/charmbracelet/lipgloss"
 
 const maxMistypedCount int = 10
-const quoteBufferSize int = 2
+const quoteBufferSize int = 3
 const scrollTextHeight int = 3
 
 const paddingX int = 10
