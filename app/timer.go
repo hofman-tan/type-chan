@@ -8,15 +8,18 @@ import (
 
 type TickMsg time.Time
 
-type stopWatch struct {
+// model for stopwatch
+type stopwatch struct {
 	startTime time.Time
 }
 
-func (s *stopWatch) start() tea.Cmd {
+// start starts the stopwatch
+func (s *stopwatch) start() tea.Cmd {
 	return s.tick()
 }
 
-func (s *stopWatch) tick() tea.Cmd {
+// tick ticks the stopwatch at every 100ms interval.
+func (s *stopwatch) tick() tea.Cmd {
 	return tea.Tick(100*time.Millisecond, func(curTime time.Time) tea.Msg {
 		if s.startTime.IsZero() {
 			s.startTime = time.Now()
@@ -25,17 +28,20 @@ func (s *stopWatch) tick() tea.Cmd {
 	})
 }
 
-func (s *stopWatch) elapsed() time.Duration {
+// elapsed returns the elapsed duration.
+func (s *stopwatch) elapsed() time.Duration {
 	if s.startTime.IsZero() {
 		return 0
 	}
 	return time.Since(s.startTime)
 }
 
-func (s *stopWatch) view() string {
+// view returns the UI string of stopwatch.
+func (s *stopwatch) view() string {
 	return s.elapsed().Round(time.Millisecond * 100).String()
 }
 
-func newStopwatch() stopWatch {
-	return stopWatch{}
+// newStopwatch returns a new instance of stopwatch.
+func newStopwatch() stopwatch {
+	return stopwatch{}
 }

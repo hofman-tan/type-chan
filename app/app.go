@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -11,9 +12,19 @@ import (
 var (
 	windowWidth int
 	appWidth    int
+	currentMode Mode
+	// Timeout duration for Timed mode
+	Timeout time.Duration = time.Second * 5 * 60
 )
 
-// app represents the main typing test program.
+type Mode int
+
+const (
+	Sprint Mode = iota
+	Timed
+)
+
+// app is the page model of the program.
 // It keeps track of the page the user is currently on.
 type app struct {
 	currentPage Page
@@ -61,7 +72,7 @@ func (a *app) View() string {
 		strings.Repeat("\n", paddingY)
 }
 
-// changePage sets the current page to the given value.
+// changePage changes and initialise a new page.
 func (a *app) changePage(page Page) error {
 	a.currentPage = page
 	return a.currentPage.init()
@@ -72,7 +83,7 @@ func New() *app {
 	return &app{}
 }
 
-// Start launches the program with the given mode.
+// Start starts the program with the given mode.
 func (a *app) Start(m Mode) {
 	currentMode = m
 

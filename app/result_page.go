@@ -9,7 +9,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// resultPage is the page model for displaying typing test results.
+// resultPage is the page model for typing results.
 type resultPage struct {
 	app *app
 
@@ -61,7 +61,7 @@ func (r *resultPage) view() string {
 		strings.Repeat(" ", paddingX) + lipgloss.NewStyle().Foreground(grey).Render("esc or ctrl+c to quit")
 }
 
-// newResultPage initialises and returns a new instance of resultPage.
+// newResultPage returns a new instance of resultPage.
 func newResultPage(
 	app *app,
 	totalKeysPressed int,

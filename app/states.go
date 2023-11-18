@@ -1,37 +1,35 @@
 package app
 
-// State is the interface for all concrete states.
+// State is the interface for all typingPage states.
 type State interface {
-	// handleLetter handles alphanumerical keys from user.
-	handleLetter(string)
-
-	// handleSpace handles space key from user.
+	handleLetter(string) // handles alphanumerical keys
 	handleSpace()
-
-	// handleBackspace handles backspace key from user.
 	handleBackspace()
-
-	// handleEnter handles enter key from user.
 	handleEnter()
 }
 
-// correctState controls the behaviour of the typing page,
-// when the user has made no mistakes in typing.
+// correctState handles the 'correct' behaviour of typingPage
+// i.e. when there's no mistake in typing.
 type correctState struct {
 	typingPage *typingPage
+}
+
+// newCorrectState returns a new instance of correctState.
+func newCorrectState(t *typingPage) *correctState {
+	return &correctState{typingPage: t}
 }
 
 func (s *correctState) handleLetter(l string) {
 	s.typingPage.pushWordInput(l)
 
-	if l == s.typingPage.text.currentLetter() {
+	if l == s.typingPage.textarea.currentLetter() {
 		// correct letter
 		s.typingPage.incrementKeysPressed(true)
-		s.typingPage.text.nextLetter()
+		s.typingPage.textarea.nextLetter()
 	} else {
 		// wrong letter
 		s.typingPage.incrementKeysPressed(false)
-		s.typingPage.text.incrementMistypedCount()
+		s.typingPage.textarea.incrementMistypedCount()
 		s.typingPage.changeState(s.typingPage.wrongState)
 	}
 }
@@ -39,15 +37,15 @@ func (s *correctState) handleLetter(l string) {
 func (s *correctState) handleSpace() {
 	s.typingPage.pushWordInput(" ")
 
-	if s.typingPage.text.currentLetter() == " " {
+	if s.typingPage.textarea.currentLetter() == " " {
 		// correct letter
 		s.typingPage.incrementKeysPressed(true)
 		s.typingPage.clearWordInput()
-		s.typingPage.text.nextLetter()
+		s.typingPage.textarea.nextLetter()
 	} else {
 		// wrong letter
 		s.typingPage.incrementKeysPressed(false)
-		s.typingPage.text.incrementMistypedCount()
+		s.typingPage.textarea.incrementMistypedCount()
 		s.typingPage.changeState(s.typingPage.wrongState)
 	}
 }
@@ -55,53 +53,53 @@ func (s *correctState) handleSpace() {
 func (s *correctState) handleBackspace() {
 	poppedLetter := s.typingPage.popWordInput()
 	if poppedLetter != "" {
-		s.typingPage.text.previousLetter()
+		s.typingPage.textarea.previousLetter()
 	}
 }
 
 func (s *correctState) handleEnter() {
 	s.typingPage.pushWordInput("⏎")
 
-	if s.typingPage.text.currentLetter() == "\n" {
+	if s.typingPage.textarea.currentLetter() == "\n" {
 		// correct letter
 		s.typingPage.incrementKeysPressed(true)
 		s.typingPage.clearWordInput()
-		s.typingPage.text.nextLetter()
+		s.typingPage.textarea.nextLetter()
 
 	} else {
 		// wrong letter
 		s.typingPage.incrementKeysPressed(false)
-		s.typingPage.text.incrementMistypedCount()
+		s.typingPage.textarea.incrementMistypedCount()
 		s.typingPage.changeState(s.typingPage.wrongState)
 	}
 }
 
-// newCorrectState initialises and returns a new instance of correctState
-func newCorrectState(t *typingPage) *correctState {
-	return &correctState{typingPage: t}
-}
-
-// wrongState controls the behaviour of the typing page,
-// when the user has made any mistakes in typing.
+// wrongState handles the 'wrong' behaviour of typingPage
+// i.e. when there's any mistyped letter.
 type wrongState struct {
 	typingPage *typingPage
+}
+
+// newWrongState returns a new instance of wrongState.
+func newWrongState(t *typingPage) *wrongState {
+	return &wrongState{typingPage: t}
 }
 
 func (s *wrongState) handleLetter(l string) {
 	s.typingPage.incrementKeysPressed(false)
 
-	if s.typingPage.text.canIncrementMistyped() {
+	if s.typingPage.textarea.canIncrementMistyped() {
 		s.typingPage.pushWordInput(l)
-		s.typingPage.text.incrementMistypedCount()
+		s.typingPage.textarea.incrementMistypedCount()
 	}
 }
 
 func (s *wrongState) handleSpace() {
 	s.typingPage.incrementKeysPressed(false)
 
-	if s.typingPage.text.canIncrementMistyped() {
+	if s.typingPage.textarea.canIncrementMistyped() {
 		s.typingPage.pushWordInput(" ")
-		s.typingPage.text.incrementMistypedCount()
+		s.typingPage.textarea.incrementMistypedCount()
 	}
 }
 
@@ -109,14 +107,14 @@ func (s *wrongState) handleBackspace() {
 	poppedLetter := s.typingPage.popWordInput()
 
 	if poppedLetter != "" {
-		if s.typingPage.text.anyMistyped() {
-			s.typingPage.text.decrementMistypedCount()
+		if s.typingPage.textarea.anyMistyped() {
+			s.typingPage.textarea.decrementMistypedCount()
 		} else {
-			s.typingPage.text.previousLetter()
+			s.typingPage.textarea.previousLetter()
 		}
 	}
 
-	if !s.typingPage.text.anyMistyped() {
+	if !s.typingPage.textarea.anyMistyped() {
 		s.typingPage.changeState(s.typingPage.correctState)
 	}
 }
@@ -124,13 +122,8 @@ func (s *wrongState) handleBackspace() {
 func (s *wrongState) handleEnter() {
 	s.typingPage.incrementKeysPressed(false)
 
-	if s.typingPage.text.canIncrementMistyped() {
+	if s.typingPage.textarea.canIncrementMistyped() {
 		s.typingPage.pushWordInput("⏎")
-		s.typingPage.text.incrementMistypedCount()
+		s.typingPage.textarea.incrementMistypedCount()
 	}
-}
-
-// newWrongState initialises and returns a new instance of wrongState
-func newWrongState(t *typingPage) *wrongState {
-	return &wrongState{typingPage: t}
 }

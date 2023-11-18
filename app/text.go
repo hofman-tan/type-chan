@@ -6,29 +6,29 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// text is the model for textarea content, and all relevant position indices.
-type text struct {
+// textarea is the model for the typing area.
+type textarea struct {
 	lines       []string
 	totalLength int
 	totalTyped  int
 
 	scroll bool // make textarea scroll (current line appears on top)
 
-	currentLineIndex     int // index position of current line of text
-	currentLetterIndex   int // index position of letter, counted from the start of current line
-	letterIndexFromStart int // index position of letter, counted from the start of text
-	mistypedCount        int // number of wrongly-typed letters, counted from the current letter index
+	currentLineIndex     int // index position of current line in text
+	currentLetterIndex   int // index position of letter/cursor, counted from the start of current line
+	letterIndexFromStart int // index position of letter/cursor, counted from the start of text
+	mistypedCount        int // number of mistyped letters
 }
 
-// newText initialises and returns a new instance of text.
-func newText() *text {
-	return &text{
+// newTextarea returns a new instance of textarea.
+func newTextarea() *textarea {
+	return &textarea{
 		lines: []string{},
 	}
 }
 
-// append appends new quote to the text model.
-func (t *text) append(q quote) {
+// append appends a quote to the textarea model.
+func (t *textarea) append(q quote) {
 	// adds a newline character to the end of text
 	if len(t.lines) != 0 {
 		t.lines[len(t.lines)-1] += "\n"
@@ -40,13 +40,13 @@ func (t *text) append(q quote) {
 	t.totalLength += q.length
 }
 
-// currentLine returns the current line of text where the cursor lies.
-func (t *text) currentLine() string {
+// currentLine returns the current line in textarea where the cursor lies.
+func (t *textarea) currentLine() string {
 	return t.lines[t.currentLineIndex]
 }
 
 // nextLetter moves the cursor to the next letter.
-func (t *text) nextLetter() {
+func (t *textarea) nextLetter() {
 	t.currentLetterIndex++
 	t.letterIndexFromStart++
 	if t.currentLetterIndex >= len(t.currentLine()) {
@@ -65,7 +65,7 @@ func (t *text) nextLetter() {
 }
 
 // previousLetter moves the cursor to the previous letter.
-func (t *text) previousLetter() {
+func (t *textarea) previousLetter() {
 	// ignore if cursor is at the start of the line, or if previous letter is a whitespace
 	if t.currentLetterIndex == 0 || string(t.currentLine()[t.currentLetterIndex-1]) == " " {
 		return
@@ -76,51 +76,49 @@ func (t *text) previousLetter() {
 }
 
 // incrementMistypedCount increments the number of mistypes made.
-func (t *text) incrementMistypedCount() {
+func (t *textarea) incrementMistypedCount() {
 	t.mistypedCount++
 }
 
 // decrementMistypedCount decrements the number of mistypes made.
-func (t *text) decrementMistypedCount() {
+func (t *textarea) decrementMistypedCount() {
 	if t.anyMistyped() {
 		t.mistypedCount--
 	}
 }
 
 // canIncrementMistyped tells if mistyped count can still be incremented further.
-func (t *text) canIncrementMistyped() bool {
+func (t *textarea) canIncrementMistyped() bool {
 	return t.mistypedCount < t.remainingLettersCount() && t.mistypedCount < maxMistypedCount
 }
 
 // anyMistyped tells if there's any mistypes made.
-func (t *text) anyMistyped() bool {
+func (t *textarea) anyMistyped() bool {
 	return t.mistypedCount > 0
 }
 
-// remainingLetterCount returns the number of letters left to type,
-// excluding the current letter.
-func (t *text) remainingLettersCount() int {
+// remainingLettersCount returns the number of letters left to type.
+func (t *textarea) remainingLettersCount() int {
 	return t.totalLength - t.totalTyped
 }
 
 // hasReachedEndOfText tells if the cursor has moved beyond the whole text,
 // denoting the completion of the typing test.
-func (t *text) hasReachedEndOfText() bool {
+func (t *textarea) hasReachedEndOfText() bool {
 	return t.remainingLettersCount() <= 0
 }
 
 // currentLetter returns the letter currently pointed by the cursor.
-func (t *text) currentLetter() string {
+func (t *textarea) currentLetter() string {
 	return string(t.lines[t.currentLineIndex][t.currentLetterIndex])
 }
 
-// currentProgress returns the current progress of typing.
-// The returned value ranges from 0 (just started) to 1 (completed).
-func (t *text) currentProgress() float64 {
+// currentProgress returns the current progress of the test in percentage.
+func (t *textarea) currentProgress() float64 {
 	return float64(t.totalTyped) / float64(t.totalLength)
 }
 
-func (t *text) View() string {
+func (t *textarea) View() string {
 	result := ""
 	MistypesToRender := 0
 	lineIndex := 0
@@ -168,6 +166,8 @@ func (t *text) View() string {
 	return result
 }
 
+// splitTextIntoLines splits a text string into lines, where the length
+// of each line is bounded by the current appWidth.
 func splitTextIntoLines(text string) []string {
 	result := []string{}
 
@@ -192,7 +192,7 @@ func splitTextIntoLines(text string) []string {
 	line := []string{}
 	lineLen := 0
 	for _, word := range wordsSlice {
-		if lineLen != 0 && lineLen+len(word) > windowWidth-paddingX*2 {
+		if lineLen != 0 && lineLen+len(word) > appWidth {
 			result = append(result, strings.Join(line, ""))
 			line = []string{}
 			lineLen = 0
@@ -212,7 +212,9 @@ func splitTextIntoLines(text string) []string {
 	return result
 }
 
-func (t *text) resize() {
+// resize resizes the textarea's width by re-splitting the text according
+// to the current resized window.
+func (t *textarea) resize() {
 	t.lines = splitTextIntoLines(strings.Join(t.lines, ""))
 
 	// determine new values for the letter and line indices

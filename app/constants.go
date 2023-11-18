@@ -2,16 +2,6 @@ package app
 
 import "github.com/charmbracelet/lipgloss"
 
-// TODO: move under app.go
-// Mode is the user setting that determines the type of typing test.
-
-type Mode int
-
-const (
-	Sprint Mode = iota
-	Timed
-)
-
 const maxMistypedCount int = 10
 const quoteBufferSize int = 2
 const scrollTextHeight int = 3

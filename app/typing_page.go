@@ -11,21 +11,19 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// typingPage is the page model for the typing test program.
+// typingPage is the model for the typing test page.
 type typingPage struct {
-	app *app
-
-	text         *text
+	app          *app
 	quoteFetcher *quoteFetcher
-
-	wordInput string
-	started   bool
+	started      bool
 
 	totalKeysPressed   int
 	correctKeysPressed int
 
 	progressBar progress.Model
-	stopWatch   stopWatch
+	textarea    *textarea
+	wordInput   string
+	stopWatch   stopwatch
 	timer       timer.Model
 
 	currentState State
@@ -44,7 +42,7 @@ func (t *typingPage) init() error {
 		quotes = append(quotes, q)
 
 	case Timed:
-		// fill up the buffer
+		// fill up the buffer first
 		for i := 0; i < quoteBufferSize; i++ {
 			q, err := getRandomQuote()
 			if err != nil {
@@ -52,17 +50,16 @@ func (t *typingPage) init() error {
 			}
 			quotes = append(quotes, q)
 		}
-		// begin continuous querying
 		t.quoteFetcher.start(quoteBufferSize)
 	}
 
 	for _, quote := range quotes {
-		t.text.append(quote)
+		t.textarea.append(quote)
 	}
 	return nil
 }
 
-// pushWordInput appends the letter to the word input.
+// pushWordInput appends a letter to the word input.
 func (t *typingPage) pushWordInput(l string) {
 	t.wordInput += l
 }
@@ -84,13 +81,13 @@ func (t *typingPage) clearWordInput() {
 	t.wordInput = ""
 }
 
-// changeState sets the current state to the given value.
+// changeState changes the current state to the given value.
 func (t *typingPage) changeState(s State) {
 	t.currentState = s
 }
 
 // incrementKeysPressed increments the total number of keys pressed.
-// 'correct' param denotes whether the current key pressed is correct.
+// 'correct' tells whether the current keypress is correct.
 func (t *typingPage) incrementKeysPressed(correct bool) {
 	t.totalKeysPressed++
 	if correct {
@@ -129,26 +126,23 @@ func (t *typingPage) update(msg tea.Msg) (tea.Cmd, error) {
 			}
 		}
 
-		if currentMode == Timed && len(t.text.lines) < scrollTextHeight {
-			t.text.append(<-t.quoteFetcher.quotes)
+		if currentMode == Timed && len(t.textarea.lines) < scrollTextHeight {
+			t.textarea.append(<-t.quoteFetcher.quotes)
 		}
 
-		if t.text.hasReachedEndOfText() {
+		if t.textarea.hasReachedEndOfText() {
 			t.toResultPage()
 		}
 
 	case TickMsg:
 		cmds = append(cmds, t.stopWatch.tick())
 
-	// Time's up!
 	case timer.TimeoutMsg:
 		t.toResultPage()
 
-	// Terminal window is resized
 	case tea.WindowSizeMsg:
 		t.progressBar.Width = appWidth
-		t.text.resize()
-
+		t.textarea.resize()
 	}
 
 	if currentMode == Timed {
@@ -164,11 +158,11 @@ func (t *typingPage) view() string {
 	var progressPercent float64
 	switch currentMode {
 	case Sprint:
-		progressPercent = t.text.currentProgress()
+		progressPercent = t.textarea.currentProgress()
 	case Timed:
 		progressPercent = float64(Timeout-t.timer.Timeout) / float64(Timeout)
 	}
-	if t.text.anyMistyped() {
+	if t.textarea.anyMistyped() {
 		t.progressBar.FullColor = string(red)
 	} else {
 		t.progressBar.FullColor = string(green)
@@ -187,13 +181,13 @@ func (t *typingPage) view() string {
 	timeStr = lipgloss.NewStyle().Width(appWidth / 2).Align(lipgloss.Right).Render(timeStr)
 
 	return strings.Repeat(" ", paddingX) + progressBar + "\n\n" +
-		t.text.View() + "\n\n" +
+		t.textarea.View() + "\n\n" +
 		strings.Repeat(" ", paddingX) + lipgloss.JoinHorizontal(lipgloss.Top, wordInput, timeStr) + "\n" +
 		strings.Repeat(" ", paddingX) + lipgloss.NewStyle().Foreground(grey).Render("esc or ctrl+c to quit")
 
 }
 
-// toResultPage initialises and transitions to result page.
+// toResultPage initialises and directs user to the result page.
 func (t *typingPage) toResultPage() error {
 	t.quoteFetcher.stop()
 
@@ -207,21 +201,21 @@ func (t *typingPage) toResultPage() error {
 	return t.app.changePage(resultPage)
 }
 
-// newTypingPage initialises and returns a new instance of typingPage.
+// newTypingPage returns a new instance of typingPage.
 func newTypingPage(app *app) *typingPage {
 	t := &typingPage{app: app}
 	t.correctState = newCorrectState(t)
 	t.wrongState = newWrongState(t)
 	t.currentState = t.correctState // initially at correct state
 
-	t.text = newText()
-	t.progressBar = progress.New(progress.WithWidth(windowWidth-paddingX*2), progress.WithoutPercentage())
+	t.textarea = newTextarea()
+	t.progressBar = progress.New(progress.WithWidth(appWidth), progress.WithoutPercentage())
 
 	switch currentMode {
 	case Sprint:
 		t.stopWatch = newStopwatch()
 	case Timed:
-		t.text.scroll = true
+		t.textarea.scroll = true
 		t.timer = timer.NewWithInterval(Timeout, time.Second)
 	}
 

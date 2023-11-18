@@ -6,13 +6,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 )
 
-//https://api.quotable.io/random?minLength=200
-//http://www.randompassages.com/
-
-// quoteFetcher is used to fetch quotes continuously from external source.
-// Quotes are then queued inside the quotes buffer.
+// quoteFetcher handles querying quotes from external source.
 type quoteFetcher struct {
 	quotes chan quote
 	error  chan error
@@ -20,7 +17,9 @@ type quoteFetcher struct {
 	stop   context.CancelFunc
 }
 
-// start kickstarts the continuous fetch process in a goroutine.
+// start starts a goroutine that fetches quotes perpetually until
+// it is explicitly stopped. Fetched quotes are then enqueued inside
+// the quotes channel.
 func (q *quoteFetcher) start(buffer int) {
 	go func() {
 		for {
@@ -38,13 +37,6 @@ func (q *quoteFetcher) start(buffer int) {
 	}()
 }
 
-// // stop stops the continuous fetch by terminating the underlying goroutine.
-// func (q *quoteFetcher) stop() {
-// 	if q.cancel != nil {
-// 		q.cancel()
-// 	}
-// }
-
 // newQuoteFetcher returns a new instance of quoteFetcher.
 func newQuoteFetcher(ctx context.Context) *quoteFetcher {
 	cancelCtx, cancel := context.WithCancel(ctx)
@@ -57,14 +49,13 @@ func newQuoteFetcher(ctx context.Context) *quoteFetcher {
 	}
 }
 
-// quote stores the quote data.
+// the quote model
 type quote struct {
 	Text   string `json:"content"`
 	length int
 }
 
-// getRandomQuote reaches to the external API and retrieves a random quote.
-// The quote will be returned as an instance of quote object.
+// getRandomQuote queries a random quote from the API.
 func getRandomQuote() (quote, error) {
 	url := "https://api.quotable.io/random?minLength=100"
 	var quote quote
@@ -89,16 +80,14 @@ func getRandomQuote() (quote, error) {
 		return quote, err
 	}
 
-	quote.Text = processText(quote.Text)
-	quote.length = len(quote.Text)
-
+	quote.Text, quote.length = processText(quote.Text)
 	return quote, nil
 }
 
-// processText sanitizes the given text string by substituting any unicode
-// characters with its equivalent ASCII representation, and removes any
-// non-ASCII and newline characters from the string.
-func processText(text string) string {
+// processText processes the quote by substituting unicode characters
+// with its equivalent ASCII representation, and removes all unicode
+// characters, tabs, newlines from the string.
+func processText(text string) (string, int) {
 	filtered := ""
 	for _, rune := range text {
 		// replace non-ASCII letter
@@ -111,16 +100,19 @@ func processText(text string) string {
 			filtered += string(rune)
 		}
 	}
-	return filtered
+
+	// remove redundant whitespaces, tabs, newlines
+	filtered = strings.Join(strings.Fields(filtered), " ")
+	return filtered, len(filtered)
 }
 
-// unicodeSubstitute is a table that maps unicode character to its
-// equivalent/similar ASCII character.
+// unicodeSubstitute maps unicode character to its equivalent/similar
+// ASCII character.
 var unicodeSubstitute = map[rune]rune{
 	'‘': '\'',
 	'’': '\'',
 }
 
-// isASCII checks if the given rune falls under the ASCII charset.
+// isASCII checks if the given rune belongs to the ASCII charset.
 // taken from: https://github.com/scott-ainsworth/go-ascii/blob/e2eb5175fb10/ascii.go#L103
 func isASCII(c rune) bool { return c <= 0x7F }
