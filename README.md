@@ -4,6 +4,8 @@ A TUI typing test powered by [Bubble Tea](https://github.com/charmbracelet/bubbl
 
 Random quotes and passages are retrieved from [quotable](https://github.com/lukePeavey/quotable).
 
+![](https://github.com/hofman-tan/type-chan/blob/master/demo.gif)
+
 ```shell
 # Fetch dependencies
 go mod download
